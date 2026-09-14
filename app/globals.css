@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: #f8fafc;
+  color: #0f172a;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* شكل الـ checkbox */
+.chk {
+  appearance: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  border: 2px solid #cbd5e1;
+  background: #fff;
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  transition: background-color 0.12s, border-color 0.12s, transform 0.08s;
+}
+.chk::after {
+  content: "";
+  width: 0.55rem;
+  height: 0.95rem;
+  border: solid #fff;
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg) scale(0);
+  margin-bottom: 0.2rem;
+  transition: transform 0.12s;
+}
+.chk:checked {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+.chk:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+.chk:active {
+  transform: scale(0.92);
+}
+.chk:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+.chk:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+
+@media (max-width: 640px) {
+  .chk {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+}
