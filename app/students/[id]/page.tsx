@@ -15,10 +15,13 @@ type AttRow = {
 
 export default async function StudentProfile({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ added?: string }>;
 }) {
   const { id } = await params;
+  const { added } = await searchParams;
   const studentId = Number(id);
   if (!Number.isInteger(studentId)) notFound();
 
@@ -75,6 +78,12 @@ export default async function StudentProfile({
     <>
       <NavBar title={student.full_name} back="/students" />
       <main className="max-w-4xl mx-auto px-3 py-4 space-y-4">
+        {added === "1" && (
+          <p className="bg-green-50 border border-green-300 text-green-800 rounded-2xl px-4 py-3 font-bold text-center">
+            ✅ اتضاف المخدوم، وهيظهر في كشف الحضور على طول
+          </p>
+        )}
+
         {/* ملخص الحضور */}
         <section className="bg-white rounded-2xl border border-slate-200 p-4">
           <h2 className="font-bold text-slate-700 mb-3">ملخص الحضور</h2>

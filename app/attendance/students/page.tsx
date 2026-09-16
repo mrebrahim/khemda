@@ -1,3 +1,4 @@
+import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import SessionBar from "@/components/SessionBar";
 import AttendanceGrid from "@/components/AttendanceGrid";
@@ -79,6 +80,12 @@ export default async function StudentsAttendancePage({
           onToggle={toggle}
           profileBase="/students"
         />
+        <Link
+          href="/students/new"
+          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-white py-3.5 font-bold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition"
+        >
+          ➕ إضافة مخدوم جديد
+        </Link>
       </main>
     </>
   );

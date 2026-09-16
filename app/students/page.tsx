@@ -1,3 +1,4 @@
+import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import StudentDirectory from "@/components/StudentDirectory";
 import { createClient } from "@/lib/supabase/server";
@@ -28,7 +29,13 @@ export default async function StudentsPage() {
   return (
     <>
       <NavBar title="بيانات المخدومين" back="/" />
-      <main className="max-w-4xl mx-auto px-3 py-4">
+      <main className="max-w-4xl mx-auto px-3 py-4 space-y-3">
+        <Link
+          href="/students/new"
+          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-300 bg-white py-3.5 font-bold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition"
+        >
+          ➕ إضافة مخدوم جديد
+        </Link>
         <StudentDirectory students={students} />
       </main>
     </>
