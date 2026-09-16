@@ -1,9 +1,13 @@
 import NavBar from "@/components/NavBar";
 import SessionBar from "@/components/SessionBar";
 import AttendanceGrid from "@/components/AttendanceGrid";
+import ServantsGate from "@/components/ServantsGate";
+import NotConfigured from "@/components/NotConfigured";
 import { createClient } from "@/lib/supabase/server";
 import { SERVANT_FIELDS, todayISO } from "@/lib/types";
+import { servantsGateState } from "@/lib/servants-gate";
 import { setServantMark } from "../actions";
+import { lockServants } from "./gate-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +16,19 @@ export default async function ServantsAttendancePage({
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
+  const gate = await servantsGateState();
+
+  if (gate !== "open") {
+    return (
+      <>
+        <NavBar title="حضور الخدام" back="/" />
+        <main className="max-w-4xl mx-auto px-3 py-4">
+          {gate === "not-configured" ? <NotConfigured /> : <ServantsGate />}
+        </main>
+      </>
+    );
+  }
+
   const { date: raw } = await searchParams;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(raw ?? "") ? raw! : todayISO();
 
@@ -64,6 +81,9 @@ export default async function ServantsAttendancePage({
 
   async function toggle(d: string, id: number, field: string, value: boolean) {
     "use server";
+    // القفل بيتراجع هنا كمان، مش في عرض الصفحة بس
+    const state = await servantsGateState();
+    if (state !== "open") throw new Error("سكشن الخدام مقفول");
     return setServantMark(d, id, field as never, value);
   }
 
@@ -83,6 +103,14 @@ export default async function ServantsAttendancePage({
           date={date}
           onToggle={toggle}
         />
+        <form action={lockServants} className="text-center pt-1">
+          <button
+            type="submit"
+            className="text-xs text-slate-500 hover:text-slate-700 rounded-lg px-3 py-2 hover:bg-slate-100 transition"
+          >
+            🔒 اقفل سكشن الخدام
+          </button>
+        </form>
       </main>
     </>
   );

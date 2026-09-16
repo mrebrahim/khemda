@@ -2,6 +2,7 @@ import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import { createClient } from "@/lib/supabase/server";
 import { STUDENT_FIELDS, SERVANT_FIELDS, formatArabicDate } from "@/lib/types";
+import { servantsGateState } from "@/lib/servants-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,7 @@ type SessionRow = { id: number; session_date: string; is_monthly_mass: boolean }
 
 export default async function ReportsPage() {
   const supabase = await createClient();
+  const servantsUnlocked = (await servantsGateState()) === "open";
 
   const { data: sessions } = await supabase
     .from("sessions")
@@ -36,12 +38,14 @@ export default async function ReportsPage() {
       .from("student_attendance")
       .select("session_id, mass, communion, service, tasbeha")
       .in("session_id", ids),
-    supabase
-      .from("servant_attendance")
-      .select(
-        "session_id, preparation, visitation, mass, communion, servants_meeting, family_meeting, service",
-      )
-      .in("session_id", ids),
+    servantsUnlocked
+      ? supabase
+          .from("servant_attendance")
+          .select(
+            "session_id, preparation, visitation, mass, communion, servants_meeting, family_meeting, service",
+          )
+          .in("session_id", ids)
+      : Promise.resolve({ data: null }),
   ]);
 
   function countBy<T extends Record<string, unknown>>(
@@ -92,6 +96,7 @@ export default async function ReportsPage() {
           </table>
         </section>
 
+        {servantsUnlocked ? (
         <section className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
           <h2 className="font-bold text-slate-700 px-4 pt-4 pb-2">الخدام</h2>
           <table className="w-full text-sm">
@@ -127,6 +132,18 @@ export default async function ReportsPage() {
             </tbody>
           </table>
         </section>
+        ) : (
+          <section className="bg-white rounded-2xl border border-slate-200 p-6 text-center">
+            <h2 className="font-bold text-slate-700">الخدام</h2>
+            <p className="text-slate-500 text-sm mt-2">
+              🔒 مقفول — افتح{" "}
+              <Link href="/attendance/servants" className="text-brand-700 font-bold hover:underline">
+                سكشن الخدام
+              </Link>{" "}
+              بالكود السري عشان تشوف تقاريرهم
+            </p>
+          </section>
+        )}
       </main>
     </>
   );
