@@ -2,15 +2,17 @@ import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import { createClient } from "@/lib/supabase/server";
 import { currentMonth, monthName, SERVICE_YEAR_MONTHS, serviceYearOf } from "@/lib/month";
+import { servantsGateState } from "@/lib/servants-gate";
 
 export const dynamic = "force-dynamic";
 
-type Row = {
+type Person = {
   id: number;
   full_name: string;
   birth_date: string;
-  area: string | null;
-  stage: string | null;
+  label: string;
+  phone: string | null;
+  kind: "servant" | "student";
 };
 
 export default async function BirthdaysPage() {
@@ -19,43 +21,67 @@ export default async function BirthdaysPage() {
   const thisMonth = Number(nowMonth.split("-")[1]);
   const { startYear, label: yearLabel } = serviceYearOf(nowMonth);
 
-  const { data } = await supabase
-    .from("students")
-    .select("id, full_name, birth_date, classes(area, stage)")
-    .eq("is_active", true)
-    .not("birth_date", "is", null)
-    .order("birth_date");
+  // أعياد ميلاد الخدام جزء من سكشن الخدام، فبتتقفل بنفس الكود
+  const servantsUnlocked = (await servantsGateState()) === "open";
 
-  const rows: Row[] = (data ?? []).map((s) => {
+  const [servantsRes, studentsRes, servantTotal, studentTotal] = await Promise.all([
+    servantsUnlocked
+      ? supabase
+          .from("servants")
+          .select("id, full_name, birth_date, phone, classes(area, stage)")
+          .eq("is_active", true)
+          .not("birth_date", "is", null)
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("students")
+      .select("id, full_name, birth_date, phone, father_phone, classes(area, stage)")
+      .eq("is_active", true)
+      .not("birth_date", "is", null),
+    supabase.from("servants").select("*", { count: "exact", head: true }).eq("is_active", true),
+    supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true),
+  ]);
+
+  const servants: Person[] = (servantsRes.data ?? []).map((s) => {
     const cls = s.classes as unknown as { area: string; stage: string } | null;
     return {
       id: s.id,
       full_name: s.full_name,
       birth_date: s.birth_date as string,
-      area: cls?.area ?? null,
-      stage: cls?.stage ?? null,
+      label: [cls?.area, cls?.stage].filter(Boolean).join(" — ") || "الفصل مش متحدّد",
+      phone: s.phone,
+      kind: "servant" as const,
     };
   });
 
-  // تجميع بالشهر، وجوه الشهر بترتيب اليوم
-  const byMonth = new Map<number, Row[]>();
-  for (const r of rows) {
-    const m = Number(r.birth_date.slice(5, 7));
-    const list = byMonth.get(m) ?? [];
-    list.push(r);
-    byMonth.set(m, list);
+  const students: Person[] = (studentsRes.data ?? []).map((s) => {
+    const cls = s.classes as unknown as { area: string; stage: string } | null;
+    return {
+      id: s.id,
+      full_name: s.full_name,
+      birth_date: s.birth_date as string,
+      label: [cls?.area, cls?.stage].filter(Boolean).join(" — "),
+      phone: s.father_phone ?? s.phone,
+      kind: "student" as const,
+    };
+  });
+
+  const byMonth = new Map<number, { servants: Person[]; students: Person[] }>();
+  for (const p of [...servants, ...students]) {
+    const m = Number(p.birth_date.slice(5, 7));
+    const slot = byMonth.get(m) ?? { servants: [], students: [] };
+    (p.kind === "servant" ? slot.servants : slot.students).push(p);
+    byMonth.set(m, slot);
   }
-  for (const list of byMonth.values()) {
-    list.sort((a, b) => a.birth_date.slice(8, 10).localeCompare(b.birth_date.slice(8, 10)));
+  const byDay = (a: Person, b: Person) => a.birth_date.slice(8, 10).localeCompare(b.birth_date.slice(8, 10));
+  for (const slot of byMonth.values()) {
+    slot.servants.sort(byDay);
+    slot.students.sort(byDay);
   }
 
-  const { count: totalActive } = await supabase
-    .from("students")
-    .select("*", { count: "exact", head: true })
-    .eq("is_active", true);
-
-  const withDate = rows.length;
-  const missing = (totalActive ?? 0) - withDate;
+  const missingStudents = (studentTotal.count ?? 0) - students.length;
+  const missingServants = servantsUnlocked
+    ? (servantTotal.count ?? 0) - servants.length
+    : 0;
 
   return (
     <>
@@ -64,29 +90,42 @@ export default async function BirthdaysPage() {
         <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center">
           <p className="font-bold text-brand-900">سنة الخدمة {yearLabel}</p>
           <p className="text-xs text-slate-500 mt-1">
-            الشهور مرتّبة من أكتوبر لسبتمبر • {withDate} مخدوم عندهم تاريخ ميلاد مسجّل
+            من أكتوبر لسبتمبر • الخدام الأول وبعدين المخدومين
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            {servantsUnlocked && <>🙌 {servants.length} خادم • </>}
+            🧒 {students.length} مخدوم عندهم تاريخ ميلاد
           </p>
         </div>
 
-        {missing > 0 && (
-          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4">
-            <p className="font-bold text-amber-900">
-              ⚠️ {missing} مخدوم من غير تاريخ ميلاد
-            </p>
-            <p className="text-sm text-amber-800 mt-1.5 leading-relaxed">
-              دول مش هيظهروا في القوائم تحت. تواريخ الميلاد دي كانت ناقصة في ملف
-              الإكسل نفسه. تقدر تكمّلها من{" "}
+        {!servantsUnlocked && (
+          <div className="bg-slate-100 border border-slate-300 rounded-2xl p-4 text-center text-sm">
+            🔒 أعياد ميلاد الخدام مقفولة — افتح{" "}
+            <Link href="/attendance/servants" className="font-bold text-brand-700 hover:underline">
+              سكشن الخدام
+            </Link>{" "}
+            بالكود السري عشان تشوفها مع المخدومين
+          </div>
+        )}
+
+        {(missingStudents > 0 || missingServants > 0) && (
+          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 text-sm">
+            <p className="font-bold text-amber-900">⚠️ ناقص تواريخ ميلاد</p>
+            <p className="text-amber-800 mt-1.5 leading-relaxed">
+              {missingServants > 0 && <>{missingServants} خادم و</>}
+              {missingStudents} مخدوم ملهمش تاريخ ميلاد، فمش هيظهروا تحت. تقدر
+              تكمّلهم من{" "}
               <Link href="/students" className="font-bold underline">
                 بيانات المخدومين
-              </Link>{" "}
-              وهيظهروا هنا على طول.
+              </Link>
+              .
             </p>
           </div>
         )}
 
         {SERVICE_YEAR_MONTHS.map((m) => {
-          const list = byMonth.get(m) ?? [];
-          // أكتوبر–ديسمبر في سنة البداية، يناير–سبتمبر في السنة اللي بعدها
+          const slot = byMonth.get(m) ?? { servants: [], students: [] };
+          const count = slot.servants.length + slot.students.length;
           const year = m >= 10 ? startYear : startYear + 1;
           const isNow = m === thisMonth;
 
@@ -112,51 +151,97 @@ export default async function BirthdaysPage() {
                   )}
                 </p>
                 <span className="text-sm font-bold text-slate-600 tabular-nums shrink-0">
-                  {list.length}
+                  {count}
                 </span>
               </div>
 
-              {list.length === 0 ? (
+              {count === 0 ? (
                 <p className="px-4 py-3 text-sm text-slate-400">مفيش أعياد ميلاد</p>
               ) : (
-                <ul className="divide-y divide-slate-100">
-                  {list.map((r) => {
-                    const day = Number(r.birth_date.slice(8, 10));
-                    const birthYear = Number(r.birth_date.slice(0, 4));
-                    const age = year - birthYear;
-                    return (
-                      <li
-                        key={r.id}
-                        className="px-4 py-2.5 flex items-center justify-between gap-3"
-                      >
-                        <div className="min-w-0">
-                          <Link
-                            href={`/students/${r.id}`}
-                            className="font-bold text-brand-900 hover:underline"
-                          >
-                            {r.full_name}
-                          </Link>
-                          <p className="text-xs text-slate-400">
-                            {[r.area, r.stage].filter(Boolean).join(" — ")}
-                          </p>
-                        </div>
-                        <div className="text-left shrink-0">
-                          <p className="font-bold text-slate-800 tabular-nums">
-                            {day} {monthName(m)}
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            بيكمّل {age} سنة
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <>
+                  {slot.servants.length > 0 && (
+                    <Group
+                      title={`🙌 الخدام (${slot.servants.length})`}
+                      people={slot.servants}
+                      month={m}
+                      year={year}
+                      hrefBase={null}
+                    />
+                  )}
+                  {slot.students.length > 0 && (
+                    <Group
+                      title={`🧒 المخدومين (${slot.students.length})`}
+                      people={slot.students}
+                      month={m}
+                      year={year}
+                      hrefBase="/students"
+                    />
+                  )}
+                </>
               )}
             </section>
           );
         })}
       </main>
+    </>
+  );
+}
+
+function Group({
+  title,
+  people,
+  month,
+  year,
+  hrefBase,
+}: {
+  title: string;
+  people: Person[];
+  month: number;
+  year: number;
+  hrefBase: string | null;
+}) {
+  return (
+    <>
+      <p className="px-4 pt-3 pb-1 text-xs font-bold text-slate-500">{title}</p>
+      <ul className="divide-y divide-slate-100">
+        {people.map((p) => {
+          const day = Number(p.birth_date.slice(8, 10));
+          const age = year - Number(p.birth_date.slice(0, 4));
+          return (
+            <li key={`${p.kind}-${p.id}`} className="px-4 py-2.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                {hrefBase ? (
+                  <Link
+                    href={`${hrefBase}/${p.id}`}
+                    className="font-bold text-brand-900 hover:underline"
+                  >
+                    {p.full_name}
+                  </Link>
+                ) : (
+                  <span className="font-bold text-brand-900">{p.full_name}</span>
+                )}
+                <p className="text-xs text-slate-400">
+                  {p.label}
+                  {p.phone && (
+                    <>
+                      {" • "}
+                      <a href={`tel:${p.phone}`} dir="ltr" className="text-brand-600 hover:underline">
+                        {p.phone}
+                      </a>
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="text-left shrink-0">
+                <p className="font-bold text-slate-800 tabular-nums">
+                  {day} {monthName(month)}
+                </p>
+                <p className="text-xs text-slate-400">بيكمّل {age} سنة</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }
