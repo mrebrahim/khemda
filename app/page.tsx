@@ -42,10 +42,40 @@ export default async function HomePage() {
       unit: "مخدوم",
     },
     {
-      href: "/reports",
+      href: "/alerts",
+      emoji: "⚠️",
+      title: "تحذيرات الغياب",
+      desc: "مين غاب أو جه مرة واحدة بس الشهر ده",
+    },
+    {
+      href: "/summary",
       emoji: "📊",
-      title: "التقارير",
-      desc: "نِسَب الحضور لكل فصل وكل فرد",
+      title: "ملخص الشهر — المخدومين",
+      desc: "مين جه ومين ما جاش وتحليل بياني",
+    },
+    {
+      href: "/birthdays",
+      emoji: "🎂",
+      title: "أعياد الميلاد",
+      desc: "أعياد ميلاد كل شهر من أكتوبر لسبتمبر",
+    },
+    {
+      href: "/servants-summary",
+      emoji: servantsLocked ? "🔒" : "🙌",
+      title: "ملخص الشهر — الخدام",
+      desc: "مين بيحضر ومين بيفتقد ومين بيجي القداس",
+    },
+    {
+      href: "/visitation",
+      emoji: servantsLocked ? "🔒" : "🏠",
+      title: "الافتقاد",
+      desc: "كل خادم بيفتقد ولا لأ، أسبوع بأسبوع",
+    },
+    {
+      href: "/reports",
+      emoji: "📋",
+      title: "تقرير الأيام",
+      desc: "أرقام الحضور في آخر ١٥ يوم",
     },
   ];
 
