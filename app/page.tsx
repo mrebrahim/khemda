@@ -42,6 +42,12 @@ export default async function HomePage() {
       unit: "مخدوم",
     },
     {
+      href: `/absent?date=${today}`,
+      emoji: "📝",
+      title: "غياب النهارده",
+      desc: "كشف نصّي جاهز للنسخ لكل خادم",
+    },
+    {
       href: "/alerts",
       emoji: "⚠️",
       title: "تحذيرات الغياب",
