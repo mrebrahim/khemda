@@ -27,32 +27,65 @@ export type CheckInResult =
     };
 
 /** بيقرا التوكن ويرجّع بيانات الولد عشان الخادم يتأكد من هويته قبل التسجيل */
-export async function lookupToken(token: string): Promise<ScanTarget | null> {
-  const clean = token.trim().toLowerCase();
-  if (!/^[a-f0-9]{16,64}$/.test(clean)) return null;
+/**
+ * بيستخرج كود الدخول من لينك الكارت، أو null لو مش لينك.
+ * الكروت الجديدة QR بتاعها لينك فيه ?c=CODE
+ */
+function codeFromUrl(raw: string): string | null {
+  const m = raw.trim().match(/[?&]c=([A-Za-z0-9]{4,12})\b/);
+  return m ? m[1].toUpperCase() : null;
+}
 
+export async function lookupToken(token: string): Promise<ScanTarget | null> {
+  const raw = token.trim();
   const supabase = await createClient();
+
+  let studentId: number | null = null;
+
+  const code = codeFromUrl(raw);
+  if (code) {
+    // كارت جديد: QR فيه لينك الدخول
+    const { data } = await supabase
+      .from("student_accounts")
+      .select("student_id, is_active")
+      .eq("login_code", code)
+      .maybeSingle();
+    if (data?.is_active) studentId = data.student_id;
+  } else if (/^[a-f0-9]{16,64}$/.test(raw.toLowerCase())) {
+    // كارت قديم: توكن حضور
+    const { data } = await supabase
+      .from("qr_tokens")
+      .select("student_id, is_active")
+      .eq("token", raw.toLowerCase())
+      .maybeSingle();
+    if (data?.is_active) studentId = data.student_id;
+  } else if (/^[A-Za-z0-9]{4,12}$/.test(raw)) {
+    // الخادم كتب الكود بإيده
+    const { data } = await supabase
+      .from("student_accounts")
+      .select("student_id, is_active")
+      .eq("login_code", raw.toUpperCase())
+      .maybeSingle();
+    if (data?.is_active) studentId = data.student_id;
+  }
+
+  if (studentId === null) return null;
+
   const { data } = await supabase
-    .from("qr_tokens")
-    .select("student_id, is_active, students(full_name, class_id, is_active, classes(area, stage))")
-    .eq("token", clean)
+    .from("students")
+    .select("id, full_name, class_id, is_active, classes(area, stage)")
+    .eq("id", studentId)
     .maybeSingle();
 
   if (!data || !data.is_active) return null;
 
-  const st = data.students as unknown as {
-    full_name: string;
-    class_id: number;
-    is_active: boolean;
-    classes: { area: string; stage: string } | null;
-  } | null;
-  if (!st || !st.is_active) return null;
+  const cls = data.classes as unknown as { area: string; stage: string } | null;
 
   const [{ data: servants }, { data: session }] = await Promise.all([
     supabase
       .from("servants")
       .select("full_name")
-      .eq("class_id", st.class_id)
+      .eq("class_id", data.class_id)
       .eq("is_active", true)
       .order("full_name"),
     supabase.from("sessions").select("id").eq("session_date", todayISO()).maybeSingle(),
@@ -64,16 +97,16 @@ export async function lookupToken(token: string): Promise<ScanTarget | null> {
       .from("student_attendance")
       .select("service")
       .eq("session_id", session.id)
-      .eq("student_id", data.student_id)
+      .eq("student_id", studentId)
       .maybeSingle();
     alreadyHere = Boolean(att?.service);
   }
 
   return {
-    studentId: data.student_id,
-    fullName: st.full_name,
-    area: st.classes?.area ?? null,
-    stage: st.classes?.stage ?? null,
+    studentId,
+    fullName: data.full_name,
+    area: cls?.area ?? null,
+    stage: cls?.stage ?? null,
     servants: (servants ?? []).map((s) => s.full_name),
     alreadyHere,
   };

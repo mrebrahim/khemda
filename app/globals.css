@@ -157,3 +157,32 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-\[levelup_0\.5s_ease-out\] { animation: none; }
 }
+
+/* ===== طباعة كروت الأبطال ===== */
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+@media print {
+  html, body { background: #fff !important; }
+
+  /* ٣ كروت في الصف على الورقة */
+  .cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4mm !important;
+  }
+
+  .hero-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px dashed #94a3b8 !important;
+  }
+
+  /* الألوان تتطبع زي ما هي مش رمادي */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
