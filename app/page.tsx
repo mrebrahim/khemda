@@ -54,6 +54,12 @@ export default async function HomePage() {
       desc: "امسح كود الولد والنقط تدخل فورًا",
     },
     {
+      href: "/admin/claims",
+      emoji: "🎁",
+      title: "طلبات الجوايز",
+      desc: "الأولاد اللي وصلوا لمستوى وطلبوا هديتهم",
+    },
+    {
       href: "/admin/cards",
       emoji: "🎫",
       title: "كروت الأبطال",

@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { completeMission } from "@/app/hero/actions";
+import { playPoint } from "@/lib/sound";
+import LevelUpOverlay from "@/components/LevelUpOverlay";
 
 export default function MissionCard({
   code,
@@ -20,6 +22,11 @@ export default function MissionCard({
 }) {
   const [done, setDone] = useState(initialDone);
   const [msg, setMsg] = useState<string | null>(null);
+  const [levelUp, setLevelUp] = useState<{
+    level: number;
+    rankName: string;
+    reward: string | null;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
 
   function run() {
@@ -36,6 +43,16 @@ export default function MissionCard({
         if (res.milestone) m = `🏆 سلسلة ${res.milestone} يوم! مكافأة إضافية!`;
         else if (res.usedFreeze) m = `+${res.xp} ❄️ استخدمنا تجميدة عشان سلسلتك متقطعش`;
         setMsg(m);
+
+        if (res.leveledUp) {
+          setLevelUp({
+            level: res.level,
+            rankName: res.rankName,
+            reward: res.reward,
+          });
+        } else {
+          playPoint();
+        }
       } catch {
         setDone(false);
         setMsg("حصلت مشكلة، جرّب تاني");
@@ -44,6 +61,15 @@ export default function MissionCard({
   }
 
   return (
+    <>
+    {levelUp && (
+      <LevelUpOverlay
+        level={levelUp.level}
+        rankName={levelUp.rankName}
+        reward={levelUp.reward}
+        onClose={() => setLevelUp(null)}
+      />
+    )}
     <button
       type="button"
       onClick={run}
@@ -87,5 +113,6 @@ export default function MissionCard({
         </p>
       )}
     </button>
+    </>
   );
 }
