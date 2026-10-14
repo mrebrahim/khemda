@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { award } from "@/lib/xp";
 import { todayISO } from "@/lib/types";
 

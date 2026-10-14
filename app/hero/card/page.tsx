@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { currentHero } from "@/lib/student-auth";
 import { qrDataUrl } from "@/lib/qr";
 

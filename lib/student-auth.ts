@@ -1,7 +1,7 @@
 import "server-only";
 import { createHmac, timingSafeEqual, randomInt } from "node:crypto";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient as createClient } from "@/lib/supabase/admin";
 
 const COOKIE = "hero_session";
 const MAX_AGE = 60 * 60 * 24 * 120; // ٤ شهور

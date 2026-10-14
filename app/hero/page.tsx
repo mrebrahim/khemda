@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { currentHero, isConfigured } from "@/lib/student-auth";
+import { hasServiceRole } from "@/lib/supabase/admin";
 import { getRanks, rankFor, getActiveSeason, getRules } from "@/lib/xp";
 import { getStreak, streakAtRisk } from "@/lib/streak";
 import { todayISO } from "@/lib/types";
@@ -11,14 +12,22 @@ import { logoutAction } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function HeroHome() {
-  if (!isConfigured()) {
+  const missing: string[] = [];
+  if (!isConfigured()) missing.push("STUDENT_SESSION_SECRET");
+  if (!hasServiceRole()) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (missing.length > 0) {
     return (
       <main className="min-h-screen grid place-items-center p-6 bg-slate-900 text-white text-center">
         <div>
           <p className="text-4xl mb-3">⚙️</p>
           <p className="font-bold">النظام لسه مش متظبّط</p>
           <p className="text-sm text-white/60 mt-2">
-            المشرف لازم يضيف STUDENT_SESSION_SECRET في إعدادات Vercel
+            المشرف لازم يضيف{" "}
+            <span dir="ltr" className="font-mono text-xs">
+              {missing.join(" + ")}
+            </span>{" "}
+            في إعدادات Vercel
           </p>
         </div>
       </main>

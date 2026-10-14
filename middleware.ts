@@ -30,7 +30,10 @@ export async function middleware(request: NextRequest) {
   // مسارات الطلاب ليها نظام دخول مستقل، والـcron والإشعارات بيتحققوا بنفسهم
   const selfGuarded =
     path === "/board" ||
-    path.startsWith("/hero") ||
+    // لازم تطابق بالظبط: startsWith("/hero") كانت بتمسك /heroes كمان
+    // وهي صفحة خدام، فكانت بتعدّي من غير تسجيل دخول
+    path === "/hero" ||
+    path.startsWith("/hero/") ||
     path.startsWith("/api/push") ||
     path.startsWith("/api/cron") ||
     path === "/sw.js" ||
