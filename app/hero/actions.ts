@@ -9,10 +9,7 @@ import { award } from "@/lib/xp";
 import { todayISO } from "@/lib/types";
 
 export async function loginAction(_prev: unknown, formData: FormData) {
-  const res = await heroLogin(
-    String(formData.get("code") ?? ""),
-    String(formData.get("pin") ?? ""),
-  );
+  const res = await heroLogin(String(formData.get("code") ?? ""));
   if (!res.ok) return { error: res.error ?? "مش عارفين ندخّلك" };
   revalidatePath("/hero", "layout");
   redirect("/hero");

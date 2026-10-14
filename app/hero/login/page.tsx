@@ -49,23 +49,6 @@ export default function HeroLogin() {
             />
           </div>
 
-          <div>
-            <label htmlFor="pin" className="block text-sm font-bold mb-1.5 text-slate-700">
-              الرقم السري
-            </label>
-            <input
-              id="pin"
-              name="pin"
-              type="password"
-              inputMode="numeric"
-              required
-              autoComplete="current-password"
-              dir="ltr"
-              placeholder="••••"
-              className="w-full rounded-xl border-2 border-slate-300 px-3 py-3 text-center text-xl font-bold tracking-widest focus:outline-hidden focus:border-brand-500"
-            />
-          </div>
-
           {state?.error && (
             <p className="text-red-600 text-sm font-bold bg-red-50 rounded-lg px-3 py-2 text-center">
               {state.error}
@@ -76,7 +59,7 @@ export default function HeroLogin() {
         </form>
 
         <p className="text-center text-white/50 text-xs mt-4">
-          نسيت الكود؟ اسأل خادمك
+          الكود مكتوب على كارت البطل بتاعك
         </p>
       </div>
     </main>

@@ -1,7 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual, randomInt } from "node:crypto";
 import { cookies } from "next/headers";
-import bcrypt from "bcryptjs";
 import { createClient } from "@/lib/supabase/server";
 
 const COOKIE = "hero_session";
@@ -28,14 +27,6 @@ export function generateLoginCode(): string {
   let out = "";
   for (let i = 0; i < 6; i++) out += alphabet[randomInt(alphabet.length)];
   return out;
-}
-
-export function generatePin(): string {
-  return String(randomInt(1000, 10000));
-}
-
-export async function hashPin(pin: string): Promise<string> {
-  return bcrypt.hash(pin, 10);
 }
 
 export type HeroSession = {
@@ -84,28 +75,22 @@ export async function currentHero(): Promise<HeroSession | null> {
 
 export async function heroLogin(
   loginCode: string,
-  pin: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const key = secret();
   if (!key) return { ok: false, error: "النظام لسه مش متظبّط — كلّم المشرف" };
 
   const code = loginCode.trim().toUpperCase();
   if (!/^[A-Z0-9]{4,12}$/.test(code)) return { ok: false, error: "الكود مش مظبوط" };
-  if (!/^\d{4,8}$/.test(pin)) return { ok: false, error: "الرقم السري مش مظبوط" };
 
   const supabase = await createClient();
   const { data } = await supabase
     .from("student_accounts")
-    .select("student_id, pin_hash, is_active")
+    .select("student_id, is_active")
     .eq("login_code", code)
     .maybeSingle();
 
-  // بنقارن حتى لو الحساب مش موجود عشان الوقت ما يفرقش
-  const hash = data?.pin_hash ?? "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv";
-  const match = await bcrypt.compare(pin, hash);
-
-  if (!data || !data.is_active || !match) {
-    return { ok: false, error: "الكود أو الرقم السري غلط" };
+  if (!data || !data.is_active) {
+    return { ok: false, error: "الكود ده مش موجود — اتأكد منه تاني" };
   }
 
   const jar = await cookies();

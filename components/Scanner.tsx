@@ -1,0 +1,254 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { identify, confirmCheckIn } from "@/app/check-in/actions";
+import type { ScanTarget, CheckInResult } from "@/lib/checkin";
+
+type Phase = "idle" | "scanning" | "confirming" | "done" | "error";
+
+export default function Scanner() {
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [target, setTarget] = useState<ScanTarget | null>(null);
+  const [result, setResult] = useState<CheckInResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [count, setCount] = useState(0);
+
+  const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
+  const lastToken = useRef<string>("");
+
+  async function stopCamera() {
+    try {
+      await scannerRef.current?.stop();
+      scannerRef.current?.clear();
+    } catch {
+      // الكاميرا كانت مقفولة خلاص
+    }
+    scannerRef.current = null;
+  }
+
+  async function startCamera() {
+    setError(null);
+    setResult(null);
+    setTarget(null);
+    setPhase("scanning");
+
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode("reader", { verbose: false });
+      scannerRef.current = scanner as unknown as typeof scannerRef.current;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        async (decoded) => {
+          if (decoded === lastToken.current) return;
+          lastToken.current = decoded;
+
+          await stopCamera();
+          setPhase("confirming");
+
+          try {
+            const found = await identify(decoded);
+            if (!found) {
+              setError("الكود ده مش معروف — جرّب تاني أو سجّله يدوي");
+              setPhase("error");
+              return;
+            }
+            setTarget(found);
+          } catch {
+            setError("حصلت مشكلة في قراءة الكود");
+            setPhase("error");
+          }
+        },
+        () => {
+          // فريم من غير QR — عادي
+        },
+      );
+    } catch {
+      setError("مقدرناش نفتح الكاميرا. اسمح للمتصفح يستخدمها وجرّب تاني.");
+      setPhase("error");
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      void stopCamera();
+    };
+  }, []);
+
+  async function confirm() {
+    if (!target || busy) return;
+    setBusy(true);
+    try {
+      const res = await confirmCheckIn(lastToken.current);
+      setResult(res);
+      setPhase("done");
+      if (res.status === "ok") setCount((c) => c + 1);
+    } catch {
+      setError("مقدرناش نسجّل الحضور");
+      setPhase("error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function next() {
+    lastToken.current = "";
+    void startCamera();
+  }
+
+  return (
+    <div className="space-y-3">
+      {count > 0 && (
+        <p className="text-center text-sm font-bold text-green-700 bg-green-50 border border-green-300 rounded-xl py-2">
+          ✅ سجّلت {count} النهارده
+        </p>
+      )}
+
+      {/* الكاميرا */}
+      <div className={phase === "scanning" ? "" : "hidden"}>
+        <div id="reader" className="rounded-2xl overflow-hidden bg-black" />
+        <p className="text-center text-sm text-slate-500 mt-2">
+          وجّه الكاميرا على كود الولد
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            void stopCamera();
+            setPhase("idle");
+          }}
+          className="w-full mt-2 rounded-xl border border-slate-300 py-2.5 font-bold text-slate-600"
+        >
+          إيقاف
+        </button>
+      </div>
+
+      {phase === "idle" && (
+        <button
+          type="button"
+          onClick={() => void startCamera()}
+          className="w-full rounded-2xl bg-brand-600 py-5 text-white font-bold text-lg hover:bg-brand-700 transition"
+        >
+          📷 افتح الكاميرا
+        </button>
+      )}
+
+      {phase === "confirming" && !target && (
+        <p className="text-center py-8 text-slate-500">بنشوف مين ده...</p>
+      )}
+
+      {/* تأكيد الهوية */}
+      {phase === "confirming" && target && (
+        <div className="bg-white rounded-2xl border-2 border-brand-400 p-5 text-center">
+          <p className="text-xs text-slate-400">اتأكد إن ده هو</p>
+          <h2 className="font-bold text-2xl text-brand-900 mt-1">
+            {target.fullName}
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {[target.area, target.stage].filter(Boolean).join(" — ")}
+          </p>
+          {target.servants.length > 0 && (
+            <p className="text-xs text-slate-400 mt-1">
+              خادمه: {target.servants.join(" • ")}
+            </p>
+          )}
+
+          {target.alreadyHere ? (
+            <p className="mt-4 bg-amber-50 border border-amber-300 rounded-xl py-3 font-bold text-amber-900">
+              إنت حاضر بالفعل يا بطل!
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void confirm()}
+              disabled={busy}
+              className="w-full mt-4 rounded-xl bg-green-600 py-3.5 text-white font-bold text-lg hover:bg-green-700 disabled:opacity-60 transition"
+            >
+              {busy ? "بيتسجّل..." : "✅ أيوة، سجّل حضوره"}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={next}
+            className="w-full mt-2 rounded-xl border border-slate-300 py-2.5 font-bold text-slate-600"
+          >
+            {target.alreadyHere ? "التالي" : "مش هو — امسح تاني"}
+          </button>
+        </div>
+      )}
+
+      {/* النتيجة */}
+      {phase === "done" && result && (
+        <div
+          className={`rounded-2xl p-6 text-center ${
+            result.status === "ok"
+              ? "bg-linear-to-b from-green-500 to-green-700 text-white"
+              : "bg-amber-50 border border-amber-300"
+          }`}
+        >
+          {result.status === "ok" ? (
+            <>
+              <p className="text-5xl mb-2">{result.rankedUp ? "👑" : "🔥"}</p>
+              <p className="font-bold text-xl">عاش يا {result.name}!</p>
+              <p className="text-3xl font-bold mt-2 tabular-nums">
+                +{result.xp} نقطة
+              </p>
+              <p className="text-sm opacity-90 mt-1">
+                رصيده بقى {result.totalXp}
+              </p>
+
+              {result.rankedUp && (
+                <div className="mt-4 bg-white/20 rounded-xl py-3">
+                  <p className="text-sm">يا نهار أبيض! رتبة جديدة 🎉</p>
+                  <p className="font-bold text-lg">{result.rankName}</p>
+                </div>
+              )}
+
+              {!result.rankedUp && result.nextRank && (
+                <p className="text-xs opacity-80 mt-3">
+                  فاضل {result.toNext} نقطة على {result.nextRank}
+                </p>
+              )}
+            </>
+          ) : result.status === "already" ? (
+            <>
+              <p className="text-4xl mb-2">👍</p>
+              <p className="font-bold text-amber-900">
+                {result.name} حاضر بالفعل — النقط اتحسبت قبل كده
+              </p>
+            </>
+          ) : (
+            <p className="font-bold text-amber-900">الكود مش معروف</p>
+          )}
+
+          <button
+            type="button"
+            onClick={next}
+            className={`w-full mt-5 rounded-xl py-3 font-bold ${
+              result.status === "ok"
+                ? "bg-white text-green-800"
+                : "bg-brand-600 text-white"
+            }`}
+          >
+            📷 الولد اللي بعده
+          </button>
+        </div>
+      )}
+
+      {phase === "error" && (
+        <div className="bg-red-50 border border-red-300 rounded-2xl p-5 text-center">
+          <p className="font-bold text-red-800">{error}</p>
+          <button
+            type="button"
+            onClick={next}
+            className="w-full mt-4 rounded-xl bg-brand-600 py-3 text-white font-bold"
+          >
+            جرّب تاني
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

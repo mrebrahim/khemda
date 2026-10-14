@@ -48,6 +48,12 @@ export default async function HomePage() {
       desc: "كشف نصّي جاهز للنسخ لكل خادم",
     },
     {
+      href: "/check-in",
+      emoji: "📷",
+      title: "تسجيل الحضور بالكود",
+      desc: "امسح كود الولد والنقط تدخل فورًا",
+    },
+    {
       href: "/admin/cards",
       emoji: "🎫",
       title: "كروت الأبطال",
