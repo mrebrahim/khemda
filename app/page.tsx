@@ -48,6 +48,12 @@ export default async function HomePage() {
       desc: "كشف نصّي جاهز للنسخ لكل خادم",
     },
     {
+      href: "/admin/cards",
+      emoji: "🎫",
+      title: "كروت الأبطال",
+      desc: "أكواد دخول المخدومين للعبة",
+    },
+    {
       href: "/heroes",
       emoji: "🏆",
       title: "لوحة الأبطال",

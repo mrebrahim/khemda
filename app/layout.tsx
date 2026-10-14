@@ -4,6 +4,8 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "حضور مدارس الأحد",
   description: "متابعة حضور المخدومين والخدام",
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "أبطال المهمة" },
 };
 
 export const viewport: Viewport = {

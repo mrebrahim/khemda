@@ -25,17 +25,28 @@ export async function middleware(request: NextRequest) {
     },
   );
 
+  const path = request.nextUrl.pathname;
+
+  // مسارات الطلاب ليها نظام دخول مستقل، والـcron والإشعارات بيتحققوا بنفسهم
+  const selfGuarded =
+    path.startsWith("/hero") ||
+    path.startsWith("/api/push") ||
+    path.startsWith("/api/cron") ||
+    path === "/sw.js" ||
+    path === "/manifest.json";
+  if (selfGuarded) return response;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && !request.nextUrl.pathname.startsWith("/login")) {
+  if (!user && !path.startsWith("/login")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && request.nextUrl.pathname.startsWith("/login")) {
+  if (user && path.startsWith("/login")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

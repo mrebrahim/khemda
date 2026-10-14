@@ -73,3 +73,10 @@ body {
     height: 1.6rem;
   }
 }
+
+/* طباعة كروت الأبطال */
+@media print {
+  body { background: #fff; }
+  .print\:hidden { display: none !important; }
+  .break-inside-avoid { break-inside: avoid; }
+}
