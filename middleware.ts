@@ -29,6 +29,7 @@ export async function middleware(request: NextRequest) {
 
   // مسارات الطلاب ليها نظام دخول مستقل، والـcron والإشعارات بيتحققوا بنفسهم
   const selfGuarded =
+    path === "/board" ||
     path.startsWith("/hero") ||
     path.startsWith("/api/push") ||
     path.startsWith("/api/cron") ||

@@ -60,6 +60,12 @@ export default async function HomePage() {
       desc: "أكواد دخول المخدومين للعبة",
     },
     {
+      href: "/board",
+      emoji: "🏆",
+      title: "لوحة الأبطال العامة",
+      desc: "لينك مفتوح يتبعت للأولاد وأهاليهم",
+    },
+    {
       href: "/heroes",
       emoji: "🏆",
       title: "لوحة الأبطال",
