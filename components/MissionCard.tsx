@@ -33,8 +33,8 @@ export default function MissionCard({
           return;
         }
         let m = `+${res.xp} نقطة! 🔥`;
-        if (res.milestone) m = `سلسلة ${res.milestone} يوم! مكافأة إضافية! 🏆`;
-        else if (res.usedFreeze) m = `+${res.xp} نقطة — واستخدمنا تجميدة عشان سلسلتك متقطعش ❄️`;
+        if (res.milestone) m = `🏆 سلسلة ${res.milestone} يوم! مكافأة إضافية!`;
+        else if (res.usedFreeze) m = `+${res.xp} ❄️ استخدمنا تجميدة عشان سلسلتك متقطعش`;
         setMsg(m);
       } catch {
         setDone(false);
@@ -49,36 +49,42 @@ export default function MissionCard({
       onClick={run}
       disabled={done || pending}
       aria-pressed={done}
-      className={`w-full text-right rounded-2xl border-2 p-4 transition ${
-        done
-          ? "bg-green-50 border-green-400"
-          : "bg-white border-slate-200 hover:border-brand-400 active:scale-[0.99]"
+      className={`g-card g-edge w-full text-right p-4 transition active:scale-[0.99] ${
+        done ? "" : "hover:brightness-125"
       }`}
+      style={{ ["--edge" as string]: done ? "#22c55e" : "#f2a900" }}
     >
       <div className="flex items-center gap-3">
         <span className="text-3xl shrink-0">{done ? "✅" : emoji}</span>
+
         <div className="grow min-w-0">
-          <p className={`font-bold ${done ? "text-green-800" : "text-slate-800"}`}>
+          <p className={`font-bold ${done ? "text-emerald-400" : "text-white"}`}>
             {title}
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">{detail}</p>
+          <p className="text-xs text-slate-400 mt-0.5">{detail}</p>
         </div>
+
         <span
-          className={`shrink-0 text-sm font-bold rounded-full px-3 py-1 ${
-            done ? "bg-green-200 text-green-900" : "bg-brand-100 text-brand-800"
+          className={`shrink-0 font-bold px-2.5 py-1 text-sm border ${
+            done
+              ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
+              : "text-amber-400 border-amber-500/40 bg-amber-500/10"
           }`}
+          dir="ltr"
         >
           +{xp}
         </span>
       </div>
 
       {msg && (
-        <p className="mt-2.5 text-sm font-bold text-green-800 bg-green-100 rounded-lg px-3 py-2">
+        <p className="mt-3 text-sm font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-3 py-2">
           {msg}
         </p>
       )}
       {!done && !msg && (
-        <p className="mt-2.5 text-xs text-brand-700 font-bold">اضغط لما تخلّصها 👆</p>
+        <p className="mt-2.5 text-xs text-amber-400/90 font-bold">
+          👆 اضغط لما تخلّصها
+        </p>
       )}
     </button>
   );

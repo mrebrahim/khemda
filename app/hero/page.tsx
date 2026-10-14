@@ -7,6 +7,8 @@ import { getStreak, streakAtRisk } from "@/lib/streak";
 import { todayISO } from "@/lib/types";
 import MissionCard from "@/components/MissionCard";
 import PushPrompt from "@/components/PushPrompt";
+import BonusCatalog from "@/components/BonusCatalog";
+import RewardLadder from "@/components/RewardLadder";
 import { logoutAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -184,6 +186,14 @@ export default async function HeroHome() {
         </section>
 
         <PushPrompt />
+
+        <BonusCatalog rules={rules} />
+
+        <RewardLadder
+          ranks={ranks}
+          totalXp={totalXp}
+          currentLevel={rank.current?.level ?? 1}
+        />
 
         <section className="g-card p-4 text-slate-300">
           <h2 className="font-bold text-white mb-2 text-sm">أطول سلسلة ليك</h2>
