@@ -180,6 +180,24 @@ body {
     border: 1px dashed #94a3b8 !important;
   }
 
+  /* كل فصل في ورقة A4 لوحده — آخر فصل مش محتاج ورقة جديدة بعده */
+  .class-page {
+    break-after: page;
+    page-break-after: always;
+    margin-bottom: 0 !important;
+  }
+  .class-page:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* عنوان الفصل يفضل مع كروته */
+  .class-head {
+    break-after: avoid;
+    page-break-after: avoid;
+    break-inside: avoid;
+  }
+
   /* الألوان تتطبع زي ما هي مش رمادي */
   * {
     -webkit-print-color-adjust: exact;
