@@ -21,12 +21,12 @@ export default function HeroLogin() {
   const [state, formAction] = useActionState(loginAction, null);
 
   return (
-    <main className="min-h-screen grid place-items-center px-4 py-10 bg-linear-to-b from-brand-900 to-slate-900">
+    <main className="g-bg min-h-screen grid place-items-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="text-center mb-7 text-white">
           <div className="text-6xl mb-3">🛡️</div>
-          <h1 className="text-2xl font-bold">أبطال المهمة</h1>
-          <p className="text-white/70 mt-1 text-sm">ادخل بالكود اللي خدته من خادمك</p>
+          <h1 className="g-title text-3xl font-bold">أبطال المهمة</h1>
+          <p className="text-slate-400 mt-2 text-sm">ادخل بالكود اللي خدته من خادمك</p>
         </div>
 
         <form
@@ -58,7 +58,7 @@ export default function HeroLogin() {
           <Submit />
         </form>
 
-        <p className="text-center text-white/50 text-xs mt-4">
+        <p className="text-center text-slate-500 text-xs mt-4">
           الكود مكتوب على كارت البطل بتاعك
         </p>
       </div>

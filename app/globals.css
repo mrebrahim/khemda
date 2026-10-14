@@ -12,6 +12,7 @@
   --color-brand-700: #6d28d9;
   --color-brand-800: #5b21b6;
   --color-brand-900: #4c1d95;
+  --color-brand-950: #2e1065;
 }
 
 html {
@@ -79,4 +80,71 @@ body {
   body { background: #fff; }
   .print\:hidden { display: none !important; }
   .break-inside-avoid { break-inside: avoid; }
+}
+
+/* ===== هوية الأبطال — مستوحاة من ألعاب الباتل رويال ===== */
+:root {
+  --g-bg:      #0b0e13;   /* أسود مزرق */
+  --g-panel:   #151a22;
+  --g-panel-2: #1c232d;
+  --g-amber:   #f2a900;   /* اللون الأساسي */
+  --g-amber-2: #ffc23d;
+  --g-cyan:    #22d3ee;
+  --g-line:    rgba(255, 255, 255, 0.08);
+}
+
+/* خلفية معدنية بخطوط مائلة خفيفة */
+.g-bg {
+  background-color: var(--g-bg);
+  background-image:
+    radial-gradient(900px 420px at 50% -120px, rgba(242, 169, 0, 0.16), transparent 70%),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.022) 0 2px,
+      transparent 2px 9px
+    );
+}
+
+/* كارت مقصوص من الركن زي واجهات الألعاب */
+.g-card {
+  background: linear-gradient(180deg, var(--g-panel-2), var(--g-panel));
+  border: 1px solid var(--g-line);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+
+/* شريط اللون على حرف الكارت — بيتغير حسب الرتبة */
+.g-edge { position: relative; }
+.g-edge::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 10%;
+  bottom: 10%;
+  width: 4px;
+  border-radius: 99px;
+  background: var(--edge, var(--g-amber));
+  box-shadow: 0 0 12px var(--edge, var(--g-amber));
+}
+
+/* رقم الترتيب في شكل سداسي */
+.g-rank {
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.g-glow-gold   { box-shadow: 0 0 0 1px rgba(242,169,0,.55), 0 0 28px -4px rgba(242,169,0,.55); }
+.g-glow-silver { box-shadow: 0 0 0 1px rgba(203,213,225,.45), 0 0 24px -6px rgba(203,213,225,.4); }
+.g-glow-bronze { box-shadow: 0 0 0 1px rgba(217,119,6,.45), 0 0 24px -6px rgba(217,119,6,.4); }
+
+/* عنوان بحروف متباعدة زي شاشات الألعاب */
+.g-title {
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 24px rgba(242, 169, 0, 0.45);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes g-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.55; }
+  }
+  .g-live { animation: g-pulse 2s ease-in-out infinite; }
 }

@@ -102,10 +102,10 @@ export default async function StudentProfile({
 
         {/* النقاط والرتبة */}
         {season && (
-          <section className="bg-linear-to-b from-brand-800 to-brand-900 text-white rounded-2xl p-4">
+          <section className="g-bg g-card text-white p-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
-                <p className="text-xs opacity-80">الرتبة الحالية</p>
+                <p className="text-[10px] tracking-[0.25em] text-amber-400 font-bold">LEVEL {String(rank.current?.level ?? 1).padStart(2, "0")}</p>
                 <p className="font-bold text-lg">{rank.current?.name ?? "—"}</p>
               </div>
               <div className="text-left">

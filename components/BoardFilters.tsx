@@ -23,21 +23,13 @@ export default function BoardFilters({
     return q ? `/board?${q}` : "/board";
   };
 
-  const Chip = ({
-    label,
-    active,
-    to,
-  }: {
-    label: string;
-    active: boolean;
-    to: string;
-  }) => (
+  const Chip = ({ label, active, to }: { label: string; active: boolean; to: string }) => (
     <Link
       href={to}
-      className={`rounded-full px-3 py-1.5 text-xs font-bold border transition ${
+      className={`px-3.5 py-1.5 text-xs font-bold border transition ${
         active
-          ? "bg-white text-slate-900 border-white"
-          : "bg-white/5 text-white/70 border-white/20 hover:border-white/50"
+          ? "bg-amber-500 text-slate-950 border-amber-400"
+          : "bg-white/5 text-slate-300 border-white/15 hover:border-amber-500/60 hover:text-white"
       }`}
     >
       {label}
@@ -45,7 +37,7 @@ export default function BoardFilters({
   );
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5 justify-center">
         <Chip label="الكل" active={!stage} to={href({ stage: "" })} />
         {stages.map((s) => (

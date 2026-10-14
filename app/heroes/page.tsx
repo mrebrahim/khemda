@@ -45,7 +45,7 @@ export default async function HeroesPage({
     <>
       <NavBar title="لوحة الأبطال" back="/" />
       <main className="max-w-4xl mx-auto px-3 py-4 space-y-4">
-        <section className="bg-linear-to-b from-brand-800 to-brand-900 text-white rounded-2xl p-5 text-center">
+        <section className="g-bg g-card text-white p-5 text-center">
           <p className="text-xs opacity-80">الموسم الحالي</p>
           <h2 className="font-bold text-xl">{season.name}</h2>
           <p className="text-xs opacity-80 mt-1" dir="ltr">

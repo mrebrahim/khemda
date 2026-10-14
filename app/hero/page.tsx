@@ -69,22 +69,22 @@ export default async function HeroHome() {
   const bothDone = done.has("prayer") && done.has("bible");
 
   return (
-    <main className="min-h-screen bg-slate-900 pb-10">
+    <main className="g-bg min-h-screen pb-10 text-white">
       {/* الهيدر */}
-      <header className="bg-linear-to-b from-brand-800 to-brand-900 text-white px-4 pt-5 pb-6">
+      <header className="px-4 pt-6 pb-6">
         <div className="max-w-md mx-auto">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs text-white/60">أهلاً يا بطل</p>
+              <p className="text-[10px] tracking-[0.3em] text-amber-400 font-bold">أهلاً يا بطل</p>
               <h1 className="font-bold text-xl truncate">
                 {hero.nickname || hero.fullName}
               </h1>
-              <p className="text-[11px] text-white/50">
+              <p className="text-[11px] text-slate-400">
                 {[hero.area, hero.stage].filter(Boolean).join(" — ")}
               </p>
             </div>
             <form action={logoutAction}>
-              <button className="text-[11px] bg-white/15 rounded-lg px-2.5 py-1.5 hover:bg-white/25 transition">
+              <button className="text-[11px] bg-white/10 border border-white/15 px-2.5 py-1.5 hover:bg-white/20 transition">
                 خروج
               </button>
             </form>
@@ -93,37 +93,52 @@ export default async function HeroHome() {
           {/* السلسلة والنقاط */}
           <div className="grid grid-cols-2 gap-2 mt-4">
             <div
-              className={`rounded-2xl p-3 text-center ${
-                atRisk ? "bg-orange-500/25 ring-2 ring-orange-400" : "bg-white/10"
+              className={`g-card p-3 text-center ${
+                atRisk ? "g-glow-bronze" : ""
               }`}
             >
               <p className="text-2xl font-bold tabular-nums">
                 🔥 {streak.current_streak}
               </p>
-              <p className="text-[11px] text-white/70">
+              <p className="text-[11px] text-slate-400">
                 {atRisk ? "سلسلتك في خطر!" : "يوم ورا التاني"}
               </p>
             </div>
-            <div className="bg-white/10 rounded-2xl p-3 text-center">
-              <p className="text-2xl font-bold tabular-nums">{totalXp}</p>
-              <p className="text-[11px] text-white/70">نقطة</p>
+            <div className="g-card p-3 text-center">
+              <p className="text-2xl font-bold tabular-nums text-amber-400">{totalXp}</p>
+              <p className="text-[11px] text-slate-400">نقطة</p>
             </div>
           </div>
 
           {/* الرتبة */}
-          <div className="mt-3">
-            <div className="flex justify-between text-xs mb-1.5">
-              <span className="font-bold">{rank.current?.name ?? "—"}</span>
-              <span className="text-white/60">
-                {rank.next ? `${rank.next.name} بعد ${rank.toNext}` : "أعلى رتبة 👑"}
+          <div className="mt-4 g-card p-3">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span
+                className="inline-flex items-baseline gap-1 px-2 py-1 font-bold leading-none text-amber-400 border border-amber-500/40 bg-amber-500/10"
+                dir="ltr"
+              >
+                <span className="text-[9px] tracking-[0.18em] opacity-80">LEVEL</span>
+                <span className="text-sm tabular-nums">
+                  {String(rank.current?.level ?? 1).padStart(2, "0")}
+                </span>
+              </span>
+              <span className="font-bold text-sm text-white truncate">
+                {rank.current?.name ?? "—"}
               </span>
             </div>
-            <span className="block h-2.5 rounded-full bg-white/15 overflow-hidden" aria-hidden="true">
+
+            <span className="block h-2.5 bg-black/40 overflow-hidden" aria-hidden="true">
               <span
-                className="block h-full rounded-full bg-yellow-400 transition-all"
+                className="block h-full bg-linear-to-l from-amber-400 to-amber-500 transition-all"
                 style={{ width: `${rank.progress}%` }}
               />
             </span>
+
+            <p className="text-[11px] text-slate-400 mt-1.5" dir="rtl">
+              {rank.next
+                ? `فاضل ${rank.toNext} نقطة على LEVEL ${rank.next.level} — ${rank.next.name}`
+                : "وصلت لأعلى مستوى 👑"}
+            </p>
           </div>
         </div>
       </header>
@@ -141,7 +156,7 @@ export default async function HeroHome() {
         )}
 
         <section className="space-y-2.5">
-          <h2 className="font-bold text-white px-1">مهمات النهارده</h2>
+          <h2 className="font-bold text-white px-1 tracking-wide">مهمات النهارده</h2>
 
           <MissionCard
             code="prayer"
@@ -170,9 +185,9 @@ export default async function HeroHome() {
 
         <PushPrompt />
 
-        <section className="bg-white/5 rounded-2xl p-4 text-white/80">
+        <section className="g-card p-4 text-slate-300">
           <h2 className="font-bold text-white mb-2 text-sm">أطول سلسلة ليك</h2>
-          <p className="text-3xl font-bold tabular-nums">
+          <p className="text-3xl font-bold tabular-nums text-amber-400">
             {streak.longest_streak} <span className="text-base font-normal">يوم</span>
           </p>
           {streak.freezes_available > 0 && (
