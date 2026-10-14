@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import NavBar from "@/components/NavBar";
 import { createClient } from "@/lib/supabase/server";
 import { STUDENT_FIELDS, formatArabicDate } from "@/lib/types";
+import { getRanks, rankFor, getActiveSeason } from "@/lib/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,21 @@ export default async function StudentProfile({
     saint_name: string | null;
   } | null;
 
+  const [ranks, season] = await Promise.all([getRanks(), getActiveSeason()]);
+  const { data: xpRows } = season
+    ? await supabase
+        .from("xp_ledger")
+        .select("xp, is_verified")
+        .eq("student_id", studentId)
+        .eq("season_id", season.id)
+    : { data: [] };
+
+  const totalXp = (xpRows ?? []).reduce((n, r) => n + r.xp, 0);
+  const verifiedXp = (xpRows ?? [])
+    .filter((r) => r.is_verified)
+    .reduce((n, r) => n + r.xp, 0);
+  const rank = rankFor(totalXp, ranks);
+
   const { data: attendance } = await supabase
     .from("student_attendance")
     .select("mass, communion, service, tasbeha, sessions(session_date, is_monthly_mass)")
@@ -82,6 +98,38 @@ export default async function StudentProfile({
           <p className="bg-green-50 border border-green-300 text-green-800 rounded-2xl px-4 py-3 font-bold text-center">
             ✅ اتضاف المخدوم، وهيظهر في كشف الحضور على طول
           </p>
+        )}
+
+        {/* النقاط والرتبة */}
+        {season && (
+          <section className="bg-linear-to-b from-brand-800 to-brand-900 text-white rounded-2xl p-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-xs opacity-80">الرتبة الحالية</p>
+                <p className="font-bold text-lg">{rank.current?.name ?? "—"}</p>
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-2xl tabular-nums">{totalXp}</p>
+                <p className="text-xs opacity-80">
+                  XP ({verifiedXp} موثقة)
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <span className="block h-2 rounded-full bg-white/20 overflow-hidden" aria-hidden="true">
+                <span
+                  className="block h-full rounded-full bg-white"
+                  style={{ width: `${rank.progress}%` }}
+                />
+              </span>
+              <p className="text-xs opacity-80 mt-1.5">
+                {rank.next
+                  ? `فاضل ${rank.toNext} نقطة على رتبة ${rank.next.name}`
+                  : "وصل لأعلى رتبة في الموسم"}
+              </p>
+            </div>
+          </section>
         )}
 
         {/* ملخص الحضور */}

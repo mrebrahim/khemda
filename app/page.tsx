@@ -48,6 +48,12 @@ export default async function HomePage() {
       desc: "كشف نصّي جاهز للنسخ لكل خادم",
     },
     {
+      href: "/heroes",
+      emoji: "🏆",
+      title: "لوحة الأبطال",
+      desc: "ترتيب المخدومين بالنقاط والرتب",
+    },
+    {
       href: "/alerts",
       emoji: "⚠️",
       title: "تحذيرات الغياب",
