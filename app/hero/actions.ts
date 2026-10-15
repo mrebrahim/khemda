@@ -7,6 +7,7 @@ import { currentHero, heroLogin, heroLogout } from "@/lib/student-auth";
 import { touchStreak } from "@/lib/streak";
 import { award, getRanks, getActiveSeason, rankFor } from "@/lib/xp";
 import { todayISO } from "@/lib/types";
+import { savePrefs, shiftDate } from "@/lib/habits";
 
 export async function loginAction(_prev: unknown, formData: FormData) {
   const res = await heroLogin(String(formData.get("code") ?? ""));
@@ -141,5 +142,30 @@ export async function claimReward(level: number) {
   }
 
   revalidatePath("/hero/rewards");
+  return { ok: true as const };
+}
+
+/** الولد بيظبط تذكيره: يشتغل ولا لأ، الميعاد، هدفه اليومي */
+export async function saveReminderPrefs(patch: {
+  reminders_on?: boolean;
+  slot?: "evening" | "night";
+  daily_goal?: 1 | 2;
+  pause_days?: number;
+}) {
+  const hero = await currentHero();
+  if (!hero) return { ok: false as const, error: "لازم تسجّل دخول" };
+
+  const clean: Record<string, unknown> = {};
+  if (typeof patch.reminders_on === "boolean") clean.reminders_on = patch.reminders_on;
+  if (patch.slot === "evening" || patch.slot === "night") clean.slot = patch.slot;
+  if (patch.daily_goal === 1 || patch.daily_goal === 2) clean.daily_goal = patch.daily_goal;
+  if (typeof patch.pause_days === "number") {
+    // وقف التذكير لمدة محدودة بس — أقصاها أسبوع
+    const days = Math.max(0, Math.min(7, Math.round(patch.pause_days)));
+    clean.paused_until = days === 0 ? null : shiftDate(todayISO(), days);
+  }
+
+  await savePrefs(hero.studentId, clean as Parameters<typeof savePrefs>[1]);
+  revalidatePath("/hero", "layout");
   return { ok: true as const };
 }

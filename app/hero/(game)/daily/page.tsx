@@ -2,6 +2,8 @@ import { loadHero } from "@/lib/hero-data";
 import Image from "next/image";
 import MissionCard from "@/components/MissionCard";
 import { GFX } from "@/lib/assets";
+import WeekStrip from "@/components/WeekStrip";
+import ReminderCard from "@/components/ReminderCard";
 
 export const dynamic = "force-dynamic";
 
@@ -9,9 +11,9 @@ export default async function DailyPage() {
   const state = await loadHero();
   if (!state) return null;
 
-  const { rules, doneToday, streak, atRisk } = state;
+  const { rules, doneToday, streak, atRisk, week, prefs } = state;
   const xpOf = (code: string) => rules.find((r) => r.code === code)?.xp ?? 0;
-  const bothDone = doneToday.has("prayer") && doneToday.has("bible");
+  const bothDone = doneToday.size >= prefs.daily_goal;
 
   return (
     <div className="space-y-3">
@@ -56,6 +58,10 @@ export default async function DailyPage() {
           ✨ خلّصت مهمات النهارده! نشوفك بكره 🔥
         </p>
       )}
+
+      <WeekStrip week={week} goal={prefs.daily_goal} />
+
+      <ReminderCard prefs={prefs} />
 
       {/* مكافآت السلسلة */}
       <section className="g-card p-4">

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { loadHero } from "@/lib/hero-data";
-import PushPrompt from "@/components/PushPrompt";
+import WeekStrip from "@/components/WeekStrip";
 import { PRIZE } from "@/lib/prizes";
 import { GFX } from "@/lib/assets";
 
@@ -11,14 +11,17 @@ export default async function HeroHome() {
   const state = await loadHero();
   if (!state) return null;
 
-  const { rank, streak, totalXp, ranks, doneToday, rules } = state;
+  const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour } = state;
   const level = rank.current?.level ?? 1;
   const nextPrize = ranks
     .filter((r) => PRIZE[r.level] && r.level > level)
     .sort((a, b) => a.level - b.level)[0];
 
   const done = doneToday.size;
-  const todoCount = 2 - done;
+  const goal = prefs.daily_goal;
+  const todoCount = Math.max(0, goal - done);
+  // بعد ٩ بالليل والسلسلة على وشك تقطع = وقت التحذير
+  const lastChance = state.atRisk && todoCount > 0 && hour >= 21;
   const xpOf = (code: string) => rules.find((r) => r.code === code)?.xp ?? 0;
   const todayXp = xpOf("prayer") + xpOf("bible");
 
@@ -29,6 +32,17 @@ export default async function HeroHome() {
 
   return (
     <div className="space-y-3 pt-3">
+      {lastChance && (
+        <div className="b-frame mission-live p-3.5 text-center" style={{ borderColor: "rgba(239,68,68,.7)" }}>
+          <p className="font-bold text-red-300">
+            🚨 آخر فرصة — سلسلتك {streak.current_streak} يوم هتضيع!
+          </p>
+          <p className="text-xs text-slate-300 mt-1">
+            مهمة واحدة بس قبل نص الليل وتفضل مكمّلة
+          </p>
+        </div>
+      )}
+
       {/* مهمة النهارده */}
       {todoCount > 0 ? (
         <Link
@@ -48,14 +62,14 @@ export default async function HeroHome() {
             />
             <div className="grow min-w-0">
               <p className="font-bold text-white text-[15px]">
-                {done === 0
+                {todoCount >= 2
                   ? "مهمتين مستنيينك النهارده!"
                   : "فاضلك مهمة واحدة بس!"}
               </p>
               <p className="text-xs text-slate-300 mt-0.5">
                 {state.atRisk
                   ? `سلسلتك ${streak.current_streak} يوم — متسبهاش تقطع! 🔥`
-                  : `دقيقة واحدة وتكسب +${todoCount === 2 ? todayXp : Math.max(xpOf("prayer"), xpOf("bible"))} نقطة`}
+                  : `دقيقة واحدة وتكسب +${todoCount >= 2 ? todayXp : Math.max(xpOf("prayer"), xpOf("bible"))} نقطة`}
               </p>
             </div>
             <span className="shrink-0 text-amber-400 font-bold text-sm">يلا ←</span>
@@ -64,10 +78,10 @@ export default async function HeroHome() {
           {/* تقدّم النهارده */}
           <div className="flex items-center gap-2 mt-3">
             <span className="b-bar block grow h-1.5 bg-black/50 overflow-hidden">
-              <span style={{ width: `${(done / 2) * 100}%` }} />
+              <span style={{ width: `${Math.min(100, (done / goal) * 100)}%` }} />
             </span>
             <span className="text-[10px] text-slate-400 tabular-nums" dir="ltr">
-              {done}/2
+              {done}/{goal}
             </span>
           </div>
         </Link>
@@ -89,7 +103,7 @@ export default async function HeroHome() {
         </div>
       )}
 
-      <PushPrompt />
+      <WeekStrip week={week} goal={goal} />
 
       {/* الجايزة الجاية */}
       {nextPrize && (

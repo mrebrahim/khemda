@@ -1,28 +1,53 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
+import {
+  cairoHour,
+  daysBetween,
+  DEFAULT_PREFS,
+  pickReminder,
+  shiftDate,
+  type ReminderKind,
+  type ReminderSlot,
+} from "@/lib/habits";
 import { todayISO } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** رسائل مختلفة عشان التنبيه ما يبقاش ممل */
-function message(streak: number, atRisk: boolean) {
-  if (atRisk && streak >= 7)
+/** رسايل مختلفة عشان التنبيه ما يبقاش ممل ولا متوقّع */
+function message(kind: ReminderKind, streak: number, left: number) {
+  if (kind === "last_chance") {
+    return streak >= 7
+      ? {
+          title: `🚨 آخر فرصة — سلسلة ${streak} يوم هتضيع!`,
+          body: "مهمة واحدة بس قبل نص الليل وتفضل مكمّلة",
+        }
+      : {
+          title: "🚨 آخر فرصة النهارده",
+          body: "دقيقة واحدة وسلسلتك تكمّل 🔥",
+        };
+  }
+
+  if (kind === "winback") {
     return {
-      title: `🔥 سلسلتك ${streak} يوم في خطر!`,
-      body: "مهمة واحدة بس النهارده وتفضل مكمّلة",
+      title: "😢 وحشتنا يا بطل",
+      body: "ارجع دلوقتي وابدأ سلسلة جديدة — نقطك مستنياك",
     };
-  if (atRisk)
-    return {
-      title: "🔥 متسبش سلسلتك تقطع",
-      body: "دقيقة واحدة وتخلّص مهمة النهارده",
-    };
-  if (streak >= 7)
+  }
+
+  if (streak >= 7) {
     return {
       title: `🏆 ${streak} يوم ورا بعض!`,
-      body: "كمّل السلسلة النهارده يا أسطورة",
+      body: `${left === 1 ? "مهمة واحدة" : "مهمتين"} وتكمّل السلسلة يا أسطورة`,
     };
+  }
+  if (streak >= 3) {
+    return {
+      title: `🔥 سلسلتك ${streak} يوم`,
+      body: "متسبهاش تقطع — دقيقة واحدة بس",
+    };
+  }
   return {
     title: "🛡️ مهمات النهارده مستنياك",
     body: "صلاة + إصحاح = نقط جديدة في رصيدك",
@@ -45,69 +70,105 @@ export async function GET(request: Request) {
   webpush.setVapidDetails("mailto:noreply@khedma.app", pub, priv);
 
   const today = todayISO();
+  const hour = cairoHour();
   const supabase = await createClient();
 
-  const [{ data: subs }, { data: doneToday }, { data: streaks }, { data: alreadySent }] =
+  const [{ data: subs }, { data: doneToday }, { data: streaks }, { data: prefsRows }, { data: logs }] =
     await Promise.all([
       supabase
         .from("push_subscriptions")
         .select("id, student_id, endpoint, p256dh, auth")
         .eq("is_active", true),
-      supabase.from("daily_missions").select("student_id, rule_code").eq("on_date", today),
-      supabase.from("student_streaks").select("student_id, current_streak, last_active_on"),
-      supabase.from("reminder_log").select("student_id").eq("kind", "daily").eq("on_date", today),
+      supabase.from("daily_missions").select("student_id").eq("on_date", today),
+      supabase
+        .from("student_streaks")
+        .select("student_id, current_streak, last_active_on"),
+      supabase
+        .from("reminder_prefs")
+        .select("student_id, reminders_on, slot, daily_goal, paused_until"),
+      supabase
+        .from("reminder_log")
+        .select("student_id, kind, on_date")
+        .gte("on_date", shiftDate(today, -7)),
     ]);
 
-  // اللي خلّص المهمتين النهارده مش محتاج تنبيه
-  const counts = new Map<number, number>();
+  const doneCount = new Map<number, number>();
   for (const d of doneToday ?? []) {
-    counts.set(d.student_id, (counts.get(d.student_id) ?? 0) + 1);
+    doneCount.set(d.student_id, (doneCount.get(d.student_id) ?? 0) + 1);
   }
-  const sentTo = new Set((alreadySent ?? []).map((r) => r.student_id));
-  const streakOf = new Map(
-    (streaks ?? []).map((s) => [s.student_id, s]),
-  );
+  const streakOf = new Map((streaks ?? []).map((s) => [s.student_id, s]));
+  const prefsOf = new Map((prefsRows ?? []).map((p) => [p.student_id, p]));
 
-  let sent = 0;
-  let skipped = 0;
-  let failed = 0;
+  const sentToday = new Set(
+    (logs ?? []).filter((l) => l.on_date === today).map((l) => `${l.student_id}:${l.kind}`),
+  );
+  const lastWinback = new Map<number, string>();
+  for (const l of logs ?? []) {
+    if (l.kind !== "winback") continue;
+    const prev = lastWinback.get(l.student_id);
+    if (!prev || l.on_date > prev) lastWinback.set(l.student_id, l.on_date);
+  }
+
+  const stats = { daily: 0, last_chance: 0, winback: 0, skipped: 0, failed: 0 };
 
   for (const sub of subs ?? []) {
-    if ((counts.get(sub.student_id) ?? 0) >= 2 || sentTo.has(sub.student_id)) {
-      skipped++;
+    const id = sub.student_id;
+    const p = prefsOf.get(id) ?? { ...DEFAULT_PREFS, student_id: id };
+
+    const done = doneCount.get(id) ?? 0;
+    const goal = p.daily_goal ?? 2;
+    const s = streakOf.get(id);
+    const streak = s?.current_streak ?? 0;
+    const idle = s?.last_active_on ? daysBetween(s.last_active_on, today) : 99;
+
+    const kind = pickReminder({
+      done,
+      goal,
+      streak,
+      idle,
+      hour,
+      slot: (p.slot ?? "evening") as ReminderSlot,
+      remindersOn: p.reminders_on ?? true,
+      pausedUntil: p.paused_until ?? null,
+      today,
+      sentToday: new Set(
+        (["daily", "last_chance", "winback"] as ReminderKind[]).filter((k) =>
+          sentToday.has(`${id}:${k}`),
+        ),
+      ),
+      lastWinback: lastWinback.get(id) ?? null,
+    });
+
+    if (!kind) {
+      stats.skipped++;
       continue;
     }
 
-    const s = streakOf.get(sub.student_id);
-    const streak = s?.current_streak ?? 0;
-    // في خطر = آخر نشاط كان أمبارح ولسه ماعملش حاجة النهارده
-    const atRisk = Boolean(
-      s?.last_active_on &&
-        streak > 0 &&
-        Math.round(
-          (Date.parse(today) - Date.parse(s.last_active_on)) / 86_400_000,
-        ) === 1,
-    );
-
-    const payload = JSON.stringify({ ...message(streak, atRisk), url: "/hero", tag: "daily" });
+    const payload = JSON.stringify({
+      ...message(kind, streak, Math.max(1, goal - done)),
+      url: "/hero/daily",
+      tag: kind,
+    });
 
     try {
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         payload,
       );
-      sent++;
+      stats[kind]++;
+      // الـunique index بيمنع التكرار لو اتبعت مرتين بالغلط
       await supabase
         .from("reminder_log")
-        .insert({ student_id: sub.student_id, kind: "daily", on_date: today });
+        .insert({ student_id: id, kind, on_date: today });
+      sentToday.add(`${id}:${kind}`);
       await supabase
         .from("push_subscriptions")
         .update({ last_sent_at: new Date().toISOString(), fail_count: 0 })
         .eq("id", sub.id);
     } catch (e) {
-      failed++;
+      stats.failed++;
       const code = (e as { statusCode?: number }).statusCode;
-      // 404/410 = الاشتراك مات (المستخدم شال التطبيق أو مسح البيانات)
+      // 404/410 = الاشتراك مات (شال التطبيق أو مسح البيانات)
       if (code === 404 || code === 410) {
         await supabase
           .from("push_subscriptions")
@@ -129,5 +190,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, sent, skipped, failed, date: today });
+  return NextResponse.json({ ok: true, hour, date: today, ...stats });
 }

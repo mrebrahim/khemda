@@ -48,6 +48,12 @@ export default async function HomePage() {
       desc: "كشف نصّي جاهز للنسخ لكل خادم",
     },
     {
+      href: "/nudge",
+      emoji: "🔔",
+      title: "تذكير الأبطال",
+      desc: "مين سلسلته هتقطع أو غايب — ورسالة واتساب جاهزة",
+    },
+    {
       href: "/check-in",
       emoji: "📷",
       title: "تسجيل الحضور بالكود",
