@@ -26,9 +26,11 @@ export default function BoardFilters({
   const Chip = ({ label, active, to }: { label: string; active: boolean; to: string }) => (
     <Link
       href={to}
-      className={`px-3.5 py-1.5 text-xs font-bold border transition ${
+      data-on={active ? "1" : "0"}
+      aria-current={active ? "true" : undefined}
+      className={`b-tab px-4 py-2 text-xs font-bold border ${
         active
-          ? "bg-amber-500 text-slate-950 border-amber-400"
+          ? ""
           : "bg-white/5 text-slate-300 border-white/15 hover:border-amber-500/60 hover:text-white"
       }`}
     >
@@ -37,7 +39,7 @@ export default function BoardFilters({
   );
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" role="group" aria-label="فلاتر لوحة الأبطال">
       <div className="flex flex-wrap gap-1.5 justify-center">
         <Chip label="الكل" active={!stage} to={href({ stage: "" })} />
         {stages.map((s) => (
