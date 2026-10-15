@@ -1,6 +1,7 @@
 import Link from "next/link";
 import CountUp from "@/components/CountUp";
 import SoundToggle from "@/components/SoundToggle";
+import TutorialButton from "@/components/TutorialButton";
 import { logoutAction } from "@/app/hero/actions";
 import type { HeroState } from "@/lib/hero-data";
 
@@ -24,10 +25,12 @@ export default function HeroHeader({ state }: { state: HeroState }) {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            <TutorialButton />
             <SoundToggle />
             <Link
               href="/hero/card"
               aria-label="كارت البطل"
+              data-tut="card"
               className="text-sm bg-white/10 border border-white/15 px-2.5 py-1.5 hover:bg-white/20 transition"
             >
               🎫
@@ -42,7 +45,7 @@ export default function HeroHeader({ state }: { state: HeroState }) {
 
         {/* السلسلة والنقط */}
         <div className="grid grid-cols-2 gap-2 mt-4">
-          <div className={`g-card p-3 text-center ${atRisk ? "g-glow-bronze" : ""}`}>
+          <div data-tut="streak" className={`g-card p-3 text-center ${atRisk ? "g-glow-bronze" : ""}`}>
             <p className="text-2xl font-bold tabular-nums">
               🔥 <CountUp to={streak.current_streak} duration={700} />
             </p>
@@ -50,7 +53,7 @@ export default function HeroHeader({ state }: { state: HeroState }) {
               {atRisk ? "سلسلتك في خطر!" : "يوم ورا التاني"}
             </p>
           </div>
-          <div className="g-card p-3 text-center">
+          <div data-tut="xp" className="g-card p-3 text-center">
             <p className="text-2xl font-bold tabular-nums text-amber-400">
               <CountUp to={totalXp} />
             </p>
@@ -59,7 +62,7 @@ export default function HeroHeader({ state }: { state: HeroState }) {
         </div>
 
         {/* المستوى */}
-        <div className="mt-2.5 g-card p-3">
+        <div data-tut="level" className="mt-2.5 g-card p-3">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span
               className="inline-flex items-baseline gap-1 px-2 py-1 font-bold leading-none text-amber-400 border border-amber-500/40 bg-amber-500/10"

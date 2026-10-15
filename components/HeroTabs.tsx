@@ -15,7 +15,7 @@ export default function HeroTabs() {
   const path = usePathname();
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-white/10 bg-[#0b0e13]/95 backdrop-blur">
+    <nav data-tut="tabs" className="fixed bottom-0 inset-x-0 z-40 border-t border-white/10 bg-[#0b0e13]/95 backdrop-blur">
       <ul className="max-w-md mx-auto grid grid-cols-5">
         {TABS.map((t) => {
           const active = path === t.href;

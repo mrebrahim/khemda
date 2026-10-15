@@ -23,6 +23,7 @@ export default async function HeroHome() {
       {todoCount > 0 ? (
         <Link
           href="/hero/daily"
+          data-tut="today"
           className="g-card g-edge block p-4"
           style={{ ["--edge" as string]: "#f2a900" }}
         >
@@ -37,7 +38,11 @@ export default async function HeroHome() {
           <p className="text-xs text-amber-400 font-bold mt-2">يلا نخلّصها ←</p>
         </Link>
       ) : (
-        <div className="g-card g-edge p-4" style={{ ["--edge" as string]: "#22c55e" }}>
+        <div
+          data-tut="today"
+          className="g-card g-edge p-4"
+          style={{ ["--edge" as string]: "#22c55e" }}
+        >
           <p className="font-bold text-emerald-400">
             ✨ خلّصت مهمات النهارده كلها!
           </p>
@@ -49,7 +54,11 @@ export default async function HeroHome() {
 
       {/* الجايزة الجاية */}
       {nextPrize && (
-        <Link href="/hero/rewards" className="g-card g-glow-gold block p-4 text-center">
+        <Link
+          href="/hero/rewards"
+          data-tut="prize"
+          className="g-card g-glow-gold block p-4 text-center"
+        >
           <p className="text-[10px] tracking-[0.25em] text-amber-400 font-bold">
             جايزتك الجاية
           </p>
@@ -90,6 +99,7 @@ export default async function HeroHome() {
 
       <Link
         href="/board"
+        data-tut="board"
         className="g-card block p-3.5 text-center font-bold text-white hover:brightness-125 transition"
       >
         🏆 شوف ترتيبك بين كل الأبطال

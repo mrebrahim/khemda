@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { STAGES, AREAS } from "@/lib/types";
 import BoardFilters from "@/components/BoardFilters";
+import BoardSearch, { type SearchRow } from "@/components/BoardSearch";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,19 @@ export default async function BoardPage({
   );
   const [first, second, third, ...rest] = filtered;
 
+  // الترتيب اللي ظاهر على الشاشة — عشان البحث يرجّع نفس الرقم
+  const searchRows: SearchRow[] = filtered.map((s, i) => ({
+    id: s.id,
+    place: i + 1,
+    display_name: s.display_name,
+    area: s.area,
+    stage: s.stage,
+    verified_xp: s.verified_xp,
+    rank_name: s.rank_name,
+    rank_tier: s.rank_tier,
+    rank_level: s.rank_level,
+  }));
+
   return (
     <main className="g-bg min-h-screen text-white pb-14">
       <header className="px-4 pt-9 pb-6 text-center">
@@ -74,6 +88,10 @@ export default async function BoardPage({
 
       <div className="max-w-3xl mx-auto px-3">
         <BoardFilters stage={stage} area={area} stages={[...STAGES]} areas={[...AREAS]} />
+
+        {filtered.length > 0 && (
+          <BoardSearch rows={searchRows} total={filtered.length} />
+        )}
 
         {filtered.length === 0 ? (
           <p className="text-center text-slate-400 py-20">لسه مفيش نقط مسجّلة</p>
