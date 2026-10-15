@@ -1,8 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import CountUp from "@/components/CountUp";
 import SoundToggle from "@/components/SoundToggle";
 import TutorialButton from "@/components/TutorialButton";
 import { logoutAction } from "@/app/hero/actions";
+import { GFX } from "@/lib/assets";
 import type { HeroState } from "@/lib/hero-data";
 
 export default function HeroHeader({ state }: { state: HeroState }) {
@@ -54,7 +56,16 @@ export default function HeroHeader({ state }: { state: HeroState }) {
             </p>
           </div>
           <div data-tut="xp" className="g-card p-3 text-center">
-            <p className="text-2xl font-bold tabular-nums text-amber-400">
+            <p className="text-2xl font-bold tabular-nums text-amber-400 flex items-center justify-center gap-1.5">
+              <Image
+                src={GFX.xpGold}
+                alt=""
+                width={96}
+                height={96}
+                priority
+                aria-hidden="true"
+                className="w-7 h-7 object-contain"
+              />
               <CountUp to={totalXp} />
             </p>
             <p className="text-[11px] text-slate-400">نقطة</p>

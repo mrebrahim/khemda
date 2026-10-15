@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useTransition } from "react";
 import { completeMission } from "@/app/hero/actions";
 import { playPoint } from "@/lib/sound";
@@ -12,6 +13,7 @@ export default function MissionCard({
   xp,
   done: initialDone,
   emoji,
+  icon,
 }: {
   code: "prayer" | "bible";
   title: string;
@@ -19,6 +21,8 @@ export default function MissionCard({
   xp: number;
   done: boolean;
   emoji: string;
+  /** أيقونة WebP اختيارية — لو مابعتهاش بيستخدم الإيموجي */
+  icon?: string;
 }) {
   const [done, setDone] = useState(initialDone);
   const [msg, setMsg] = useState<string | null>(null);
@@ -81,7 +85,18 @@ export default function MissionCard({
       style={{ ["--edge" as string]: done ? "#22c55e" : "#f2a900" }}
     >
       <div className="flex items-center gap-3">
-        <span className="text-3xl shrink-0">{done ? "✅" : emoji}</span>
+        {icon && !done ? (
+          <Image
+            src={icon}
+            alt=""
+            width={128}
+            height={128}
+            aria-hidden="true"
+            className="w-11 h-11 shrink-0 object-contain"
+          />
+        ) : (
+          <span className="text-3xl shrink-0">{done ? "✅" : emoji}</span>
+        )}
 
         <div className="grow min-w-0">
           <p className={`font-bold ${done ? "text-emerald-400" : "text-white"}`}>

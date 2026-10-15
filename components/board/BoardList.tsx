@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import HeroAvatar from "@/components/board/HeroAvatar";
+import { PLACE_BADGE, GFX } from "@/lib/assets";
 import { tierColor, type Ranked } from "@/lib/board";
 import { normalizeArabic } from "@/lib/types";
 
@@ -92,16 +94,26 @@ export default function BoardList({
               }}
             >
               <div className="flex items-center gap-2.5">
-                <span
-                  className="g-rank w-9 h-10 shrink-0 grid place-content-center font-bold tabular-nums text-sm"
-                  style={{
-                    background: top10 ? `${color}3d` : "rgba(255,255,255,.10)",
-                    color: "#ffffff",
-                    boxShadow: top10 ? `inset 0 0 0 1px ${color}` : undefined,
-                  }}
-                >
-                  {s.place}
-                </span>
+                {PLACE_BADGE[s.place] ? (
+                  <Image
+                    src={PLACE_BADGE[s.place]}
+                    alt={`المركز ${s.place}`}
+                    width={128}
+                    height={128}
+                    className="w-10 h-10 shrink-0 object-contain"
+                  />
+                ) : (
+                  <span
+                    className="g-rank w-9 h-10 shrink-0 grid place-content-center font-bold tabular-nums text-sm"
+                    style={{
+                      background: top10 ? `${color}3d` : "rgba(255,255,255,.10)",
+                      color: "#ffffff",
+                      boxShadow: top10 ? `inset 0 0 0 1px ${color}` : undefined,
+                    }}
+                  >
+                    {s.place}
+                  </span>
+                )}
 
                 <HeroAvatar seed={s.id} size={40} color={color} />
 
@@ -135,11 +147,21 @@ export default function BoardList({
                   </span>
                 </span>
 
-                <span className="shrink-0 text-left w-14">
-                  <span className="block font-bold text-lg text-amber-400 tabular-nums leading-none">
-                    {s.verified_xp}
+                <span className="shrink-0 flex items-center gap-1">
+                  <Image
+                    src={GFX.xpGold}
+                    alt=""
+                    width={96}
+                    height={96}
+                    aria-hidden="true"
+                    className="w-5 h-5 object-contain hidden sm:block"
+                  />
+                  <span className="text-left w-12">
+                    <span className="block font-bold text-lg text-amber-400 tabular-nums leading-none">
+                      {s.verified_xp}
+                    </span>
+                    <span className="block text-[10px] text-slate-400 mt-0.5">نقطة</span>
                   </span>
-                  <span className="block text-[10px] text-slate-400 mt-0.5">نقطة</span>
                 </span>
               </div>
 

@@ -1,5 +1,7 @@
 import { loadHero } from "@/lib/hero-data";
+import Image from "next/image";
 import MissionCard from "@/components/MissionCard";
+import { GFX } from "@/lib/assets";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,7 @@ export default async function DailyPage() {
       <MissionCard
         code="prayer"
         emoji="🙏"
+        icon={GFX.missionPrayer}
         title="مهمة الصلاة اليومية"
         detail="أبانا الذي • صلاة الشكر • مزمور ٥٠"
         xp={xpOf("prayer")}
@@ -41,6 +44,7 @@ export default async function DailyPage() {
       <MissionCard
         code="bible"
         emoji="📖"
+        icon={GFX.missionBible}
         title="رحلة الكتاب المقدس"
         detail="اقرا إصحاح واحد على الأقل"
         xp={xpOf("bible")}
@@ -55,7 +59,17 @@ export default async function DailyPage() {
 
       {/* مكافآت السلسلة */}
       <section className="g-card p-4">
-        <h3 className="font-bold text-white text-sm mb-2.5">🏆 مكافآت السلسلة</h3>
+        <h3 className="font-bold text-white text-sm mb-2.5 flex items-center gap-2">
+          <Image
+            src={GFX.missionAchievement}
+            alt=""
+            width={128}
+            height={128}
+            aria-hidden="true"
+            className="w-6 h-6 object-contain"
+          />
+          مكافآت السلسلة
+        </h3>
         <ul className="space-y-1.5">
           {[
             { d: 3, xp: 5 },

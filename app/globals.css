@@ -436,3 +436,9 @@ body {
   .b-in { opacity: 1; }
   .b-row:hover { transform: none; }
 }
+
+/* شخصية المنصة — توهّج خفيف تحتها */
+.b-char {
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.75));
+  object-fit: contain;
+}

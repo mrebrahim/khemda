@@ -1,42 +1,22 @@
-import HeroAvatar from "@/components/board/HeroAvatar";
+import Image from "next/image";
+import { PLACE_CHAR } from "@/lib/assets";
 import { tierColor, type Ranked } from "@/lib/board";
 
 const STYLE = {
   1: {
-    medal: "🥇",
-    m1: "#ffd76a",
-    m2: "#c47f00",
     halo: "rgba(242,169,0,.55)",
-    p1: "#f6c445",
-    p2: "#a86a00",
-    pb: "rgba(242,169,0,.85)",
-    bar: "h-24 sm:h-28",
-    label: "البطل",
-    av: 92,
+    p1: "#f6c445", p2: "#a86a00", pb: "rgba(242,169,0,.85)",
+    bar: "h-20 sm:h-24", label: "البطل", char: 148, charSm: 108,
   },
   2: {
-    medal: "🥈",
-    m1: "#eef2f7",
-    m2: "#8c9aae",
     halo: "rgba(125,211,252,.42)",
-    p1: "#dbe4ef",
-    p2: "#64748b",
-    pb: "rgba(186,230,253,.7)",
-    bar: "h-16 sm:h-20",
-    label: "التاني",
-    av: 68,
+    p1: "#dbe4ef", p2: "#64748b", pb: "rgba(186,230,253,.7)",
+    bar: "h-14 sm:h-16", label: "التاني", char: 118, charSm: 88,
   },
   3: {
-    medal: "🥉",
-    m1: "#f0a35e",
-    m2: "#8a4b12",
     halo: "rgba(217,119,6,.45)",
-    p1: "#e49a56",
-    p2: "#7c4208",
-    pb: "rgba(217,119,6,.75)",
-    bar: "h-12 sm:h-16",
-    label: "التالت",
-    av: 68,
+    p1: "#e49a56", p2: "#7c4208", pb: "rgba(217,119,6,.75)",
+    bar: "h-11 sm:h-12", label: "التالت", char: 118, charSm: 88,
   },
 } as const;
 
@@ -55,40 +35,27 @@ export default function Podium({
 
   return (
     <div
-      className={`relative text-center b-in ${first ? "-mt-4 sm:-mt-6" : ""}`}
+      className={`relative text-center b-in ${first ? "-mt-3 sm:-mt-5" : ""}`}
       style={{ animationDelay: `${place === 1 ? 0 : place === 2 ? 0.12 : 0.24}s` }}
     >
-      {/* هالة الضوء ورا الشخصية */}
-      <span className="b-spot" style={{ ["--halo" as string]: s.halo }} aria-hidden="true" />
+      {/* هالة ضوء ورا الشخصية */}
+      <span className="b-spot" style={{ ["--halo" as string]: s.halo } as object} aria-hidden="true" />
 
-      <div className="relative">
-        {first && (
-          <span className="b-crown block text-2xl sm:text-3xl leading-none" aria-hidden="true">
-            👑
-          </span>
-        )}
-
-        <div className="relative inline-block mt-1">
-          <HeroAvatar
-            seed={person.id}
-            size={s.av}
-            color={first ? "#ffd166" : color}
-            crown={false}
-          />
-          {/* الميدالية */}
-          <span
-            className={`b-medal b-shine absolute -bottom-1 ${
-              first ? "-left-1 w-8 h-8 text-sm" : "-left-1 w-7 h-7 text-xs"
-            }`}
-            style={{ ["--m1" as string]: s.m1, ["--m2" as string]: s.m2 }}
-          >
-            <span className="relative z-10 tabular-nums">{place}</span>
-          </span>
-        </div>
+      {/* شخصية المركز — الصورة فيها التاج والدرع والأجنحة */}
+      <div className="relative flex justify-center">
+        <Image
+          src={PLACE_CHAR[place]}
+          alt={`المركز ${place}`}
+          width={512}
+          height={512}
+          priority
+          sizes="(max-width: 640px) 33vw, 180px"
+          className={`b-char w-auto ${first ? "h-[108px] sm:h-[148px]" : "h-[88px] sm:h-[118px]"}`}
+        />
       </div>
 
       <p
-        className={`font-bold text-white leading-tight mt-2 px-0.5 ${
+        className={`font-bold text-white leading-tight mt-1.5 px-0.5 ${
           first ? "text-[15px] sm:text-lg" : "text-[13px] sm:text-base"
         }`}
         title={person.display_name}
@@ -117,7 +84,7 @@ export default function Podium({
           ["--p1" as string]: s.p1,
           ["--p2" as string]: s.p2,
           ["--pb" as string]: s.pb,
-        }}
+        } as object}
       >
         <span
           className={`font-bold tabular-nums leading-none text-slate-950 ${

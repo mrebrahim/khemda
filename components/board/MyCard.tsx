@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import HeroAvatar from "@/components/board/HeroAvatar";
+import { GFX, PLACE_BADGE } from "@/lib/assets";
 import { hypeFor, tierColor, type Ranked } from "@/lib/board";
 
 /** «مستواك دلوقتي» — بتظهر للولد اللي داخل بكوده */
@@ -17,7 +19,7 @@ export default function MyCard({
   return (
     <section className="b-frame b-me p-4" aria-label="مستواك دلوقتي">
       <div className="flex items-center gap-3">
-        <HeroAvatar seed={me.id} size={56} color={color} crown={me.place === 1} />
+        <HeroAvatar seed={me.id} size={56} color={color} priority />
         <div className="grow min-w-0">
           <p className="text-[10px] tracking-[0.25em] text-amber-400 font-bold">
             مستواك دلوقتي
@@ -26,6 +28,16 @@ export default function MyCard({
           <p className="text-[11px] text-slate-400 truncate">{me.rank_name ?? "—"}</p>
         </div>
         <span className="shrink-0 text-center">
+          {PLACE_BADGE[me.place] && (
+            <Image
+              src={PLACE_BADGE[me.place]}
+              alt=""
+              width={128}
+              height={128}
+              aria-hidden="true"
+              className="w-9 h-9 mx-auto object-contain"
+            />
+          )}
           <span className="block text-[10px] text-slate-400">المركز</span>
           <span className="block font-bold text-xl text-white tabular-nums leading-none">
             {me.place}
@@ -45,8 +57,11 @@ export default function MyCard({
             {String(me.rank_level ?? 1).padStart(2, "0")}
           </span>
         </span>
-        <span className="font-bold text-amber-400 tabular-nums text-lg">
-          {me.verified_xp} <span className="text-[11px] text-slate-400 font-normal">نقطة</span>
+        <span className="flex items-center gap-1.5">
+          <Image src={GFX.xpGold} alt="" width={96} height={96} aria-hidden="true" className="w-6 h-6 object-contain" />
+          <span className="font-bold text-amber-400 tabular-nums text-lg">
+            {me.verified_xp} <span className="text-[11px] text-slate-400 font-normal">نقطة</span>
+          </span>
         </span>
       </div>
 

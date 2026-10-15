@@ -1,7 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { loadHero } from "@/lib/hero-data";
 import PushPrompt from "@/components/PushPrompt";
 import { PRIZE } from "@/lib/prizes";
+import { GFX } from "@/lib/assets";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +61,15 @@ export default async function HeroHome() {
           data-tut="prize"
           className="g-card g-glow-gold block p-4 text-center"
         >
-          <p className="text-[10px] tracking-[0.25em] text-amber-400 font-bold">
+          <Image
+            src={GFX.crownGoldSm}
+            alt=""
+            width={96}
+            height={96}
+            aria-hidden="true"
+            className="w-8 h-8 mx-auto object-contain"
+          />
+          <p className="text-[10px] tracking-[0.25em] text-amber-400 font-bold mt-1">
             جايزتك الجاية
           </p>
           <p className="text-5xl my-2">{PRIZE[nextPrize.level].emoji}</p>
@@ -102,7 +112,17 @@ export default async function HeroHome() {
         data-tut="board"
         className="g-card block p-3.5 text-center font-bold text-white hover:brightness-125 transition"
       >
-        🏆 شوف ترتيبك بين كل الأبطال
+        <span className="inline-flex items-center justify-center gap-2">
+          <Image
+            src={GFX.trophyGold}
+            alt=""
+            width={128}
+            height={128}
+            aria-hidden="true"
+            className="w-7 h-7 object-contain"
+          />
+          شوف ترتيبك بين كل الأبطال
+        </span>
       </Link>
     </div>
   );
