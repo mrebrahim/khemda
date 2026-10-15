@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import HeroHeader from "@/components/HeroHeader";
 import HeroTabs from "@/components/HeroTabs";
 import Tutorial from "@/components/Tutorial";
+import Sparks from "@/components/board/Sparks";
 import { loadHero, missingConfig } from "@/lib/hero-data";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +35,12 @@ export default async function GameLayout({
   if (!state) redirect("/hero/login");
 
   return (
-    <div className="g-bg min-h-screen text-white pb-24">
-      <HeroHeader state={state} />
-      <div className="max-w-md mx-auto px-4">{children}</div>
+    <div className="arena min-h-screen text-white pb-24">
+      <Sparks />
+      <div className="relative">
+        <HeroHeader state={state} />
+        <div className="max-w-md mx-auto px-4">{children}</div>
+      </div>
       <HeroTabs />
       <Tutorial studentId={state.hero.studentId} rules={state.rules} />
     </div>

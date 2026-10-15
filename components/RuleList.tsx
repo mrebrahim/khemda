@@ -22,9 +22,9 @@ export default function RuleList({
   if (rules.length === 0) return null;
 
   return (
-    <div className="g-card g-edge p-3.5" style={{ ["--edge" as string]: color }}>
+    <div className="b-frame p-3.5" style={{ borderColor: `${color}55` }}>
       <div className="flex items-baseline justify-between gap-2 mb-2.5">
-        <p className="font-bold text-white text-sm">{title}</p>
+        <p className="sec-title font-bold text-white text-sm" style={{ ["--accent" as string]: color }}>{title}</p>
         {note && <p className="text-[11px] text-slate-500">{note}</p>}
       </div>
 
@@ -32,7 +32,7 @@ export default function RuleList({
         {rules.map((r) => (
           <li
             key={r.code}
-            className="flex items-center gap-2.5 py-1.5 border-b border-white/5 last:border-0"
+            className="flex items-center gap-2.5 py-2 border-b border-white/5 last:border-0"
           >
             <span className="text-lg shrink-0">{EMOJI[r.code] ?? "•"}</span>
             <span className="grow min-w-0 text-sm text-slate-200">{r.name_ar}</span>

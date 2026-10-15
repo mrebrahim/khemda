@@ -1,7 +1,9 @@
 import { loadHero } from "@/lib/hero-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PRIZE } from "@/lib/prizes";
+import Image from "next/image";
 import ClaimButton from "@/components/ClaimButton";
+import { GFX } from "@/lib/assets";
 
 export const dynamic = "force-dynamic";
 
@@ -39,9 +41,9 @@ export default async function RewardsPage() {
   );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pt-3">
       <div className="flex items-baseline justify-between gap-2 px-1">
-        <h2 className="font-bold text-white tracking-wide">🎁 الجوايز</h2>
+        <h2 className="sec-title font-bold text-white tracking-wide">الجوايز</h2>
         <span className="text-[11px] text-slate-400">
           {unlockedUnclaimed.length > 0
             ? `${unlockedUnclaimed.length} جاهزة للطلب!`
@@ -59,16 +61,32 @@ export default async function RewardsPage() {
         return (
           <div
             key={r.level}
-            className={`g-card g-edge p-4 ${unlocked ? "" : "opacity-80"} ${
+            className={`b-frame p-4 ${unlocked ? "" : "opacity-90"} ${
               isNext ? "g-glow-gold" : ""
             }`}
             style={{
-              ["--edge" as string]: unlocked ? "#22c55e" : isNext ? "#f2a900" : "#475569",
+              borderColor: unlocked
+                ? "rgba(34,197,94,.55)"
+                : isNext
+                  ? "rgba(242,169,0,.6)"
+                  : "rgba(255,255,255,.12)",
             }}
           >
             <div className="flex items-center gap-3">
-              <span className={`text-3xl shrink-0 ${unlocked ? "" : "grayscale"}`}>
-                {prize.emoji}
+              <span className="relative shrink-0">
+                <span className={`block text-3xl ${unlocked ? "" : "grayscale opacity-70"}`}>
+                  {prize.emoji}
+                </span>
+                {isNext && (
+                  <Image
+                    src={GFX.crownGoldSm}
+                    alt=""
+                    width={96}
+                    height={96}
+                    aria-hidden="true"
+                    className="b-crown absolute -top-3.5 left-1/2 -translate-x-1/2 w-6 h-6 object-contain"
+                  />
+                )}
               </span>
 
               <div className="grow min-w-0">
@@ -85,9 +103,19 @@ export default async function RewardsPage() {
             </div>
 
             {!unlocked && (
-              <p className="text-xs text-slate-400 mt-2">
-                فاضلك <b className="text-amber-400">{r.xp_required - totalXp}</b> نقطة
-              </p>
+              <div className="mt-2.5">
+                <span className="b-bar block h-1.5 bg-black/50 overflow-hidden">
+                  <span
+                    style={{
+                      width: `${Math.min(100, Math.round((totalXp / r.xp_required) * 100))}%`,
+                    }}
+                  />
+                </span>
+                <p className="text-xs text-slate-300 mt-1.5">
+                  فاضلك <b className="text-amber-400">{r.xp_required - totalXp}</b> نقطة
+                  {isNext && <span className="text-amber-300 font-bold"> — قرّبت يا وحش! 🔥</span>}
+                </p>
+              </div>
             )}
 
             {unlocked && !status && <ClaimButton level={r.level} />}

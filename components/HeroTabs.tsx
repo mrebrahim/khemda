@@ -15,7 +15,10 @@ export default function HeroTabs() {
   const path = usePathname();
 
   return (
-    <nav data-tut="tabs" className="fixed bottom-0 inset-x-0 z-40 border-t border-white/10 bg-[#0b0e13]/95 backdrop-blur">
+    <nav
+      data-tut="tabs"
+      className="fixed bottom-0 inset-x-0 z-40 border-t border-amber-500/25 bg-[#0b0e13]/95 backdrop-blur"
+    >
       <ul className="max-w-md mx-auto grid grid-cols-5">
         {TABS.map((t) => {
           const active = path === t.href;
@@ -24,15 +27,21 @@ export default function HeroTabs() {
               <Link
                 href={t.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-0.5 py-2.5 transition ${
-                  active ? "text-amber-400" : "text-slate-400 hover:text-white"
+                className={`relative flex flex-col items-center gap-0.5 pt-2.5 pb-2 transition ${
+                  active ? "tab-on text-amber-300" : "text-slate-400 hover:text-white"
                 }`}
               >
-                <span className="text-xl leading-none">{t.emoji}</span>
+                <span
+                  className={`text-xl leading-none transition-transform ${
+                    active ? "scale-110" : ""
+                  }`}
+                >
+                  {t.emoji}
+                </span>
                 <span className="text-[10px] font-bold">{t.label}</span>
                 <span
-                  className={`h-0.5 w-6 rounded-full ${
-                    active ? "bg-amber-400" : "bg-transparent"
+                  className={`absolute top-0 inset-x-3 h-0.5 ${
+                    active ? "bg-amber-400 shadow-[0_0_10px_1px_rgba(242,169,0,.9)]" : ""
                   }`}
                 />
               </Link>

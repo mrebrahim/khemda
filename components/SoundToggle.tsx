@@ -17,7 +17,7 @@ export default function SoundToggle() {
         setSound(next);
       }}
       aria-label={on ? "اقفل الصوت" : "افتح الصوت"}
-      className="text-sm bg-white/10 border border-white/15 px-2.5 py-1.5 hover:bg-white/20 transition"
+      className="text-xs bg-white/10 border border-white/15 px-2 py-1 hover:bg-white/20 transition"
     >
       {on ? "🔊" : "🔇"}
     </button>

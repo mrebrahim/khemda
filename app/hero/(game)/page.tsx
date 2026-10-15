@@ -11,44 +11,81 @@ export default async function HeroHome() {
   const state = await loadHero();
   if (!state) return null;
 
-  const { rank, streak, totalXp, ranks, doneToday } = state;
+  const { rank, streak, totalXp, ranks, doneToday, rules } = state;
   const level = rank.current?.level ?? 1;
   const nextPrize = ranks
     .filter((r) => PRIZE[r.level] && r.level > level)
     .sort((a, b) => a.level - b.level)[0];
 
-  const todoCount = 2 - doneToday.size;
+  const done = doneToday.size;
+  const todoCount = 2 - done;
+  const xpOf = (code: string) => rules.find((r) => r.code === code)?.xp ?? 0;
+  const todayXp = xpOf("prayer") + xpOf("bible");
+
+  // أكبر يوم في الأسبوع — عشان يعرف إن الجمعة هي الكنز
+  const fridayMax = rules
+    .filter((r) => r.category === "friday" && r.is_active && !/_(1st|2nd|3rd)$/.test(r.code))
+    .reduce((n, r) => n + r.xp, 0);
 
   return (
-    <div className="space-y-3">
-      {/* اللي لازم يعمله النهارده */}
+    <div className="space-y-3 pt-3">
+      {/* مهمة النهارده */}
       {todoCount > 0 ? (
         <Link
           href="/hero/daily"
           data-tut="today"
-          className="g-card g-edge block p-4"
-          style={{ ["--edge" as string]: "#f2a900" }}
+          className="b-frame mission-live block p-4 relative overflow-hidden"
         >
-          <p className="font-bold text-white">
-            ☀️ فاضلك {todoCount === 2 ? "مهمتين" : "مهمة"} النهارده
-          </p>
-          <p className="text-xs text-slate-400 mt-1">
-            {state.atRisk
-              ? `سلسلتك ${streak.current_streak} يوم — متسبهاش تقطع!`
-              : "دقيقة واحدة وتكسب نقطك"}
-          </p>
-          <p className="text-xs text-amber-400 font-bold mt-2">يلا نخلّصها ←</p>
+          <div className="flex items-center gap-3">
+            <Image
+              src={GFX.missionPrayer}
+              alt=""
+              width={128}
+              height={128}
+              priority
+              aria-hidden="true"
+              className="w-12 h-12 object-contain shrink-0"
+            />
+            <div className="grow min-w-0">
+              <p className="font-bold text-white text-[15px]">
+                {done === 0
+                  ? "مهمتين مستنيينك النهارده!"
+                  : "فاضلك مهمة واحدة بس!"}
+              </p>
+              <p className="text-xs text-slate-300 mt-0.5">
+                {state.atRisk
+                  ? `سلسلتك ${streak.current_streak} يوم — متسبهاش تقطع! 🔥`
+                  : `دقيقة واحدة وتكسب +${todoCount === 2 ? todayXp : Math.max(xpOf("prayer"), xpOf("bible"))} نقطة`}
+              </p>
+            </div>
+            <span className="shrink-0 text-amber-400 font-bold text-sm">يلا ←</span>
+          </div>
+
+          {/* تقدّم النهارده */}
+          <div className="flex items-center gap-2 mt-3">
+            <span className="b-bar block grow h-1.5 bg-black/50 overflow-hidden">
+              <span style={{ width: `${(done / 2) * 100}%` }} />
+            </span>
+            <span className="text-[10px] text-slate-400 tabular-nums" dir="ltr">
+              {done}/2
+            </span>
+          </div>
         </Link>
       ) : (
         <div
           data-tut="today"
-          className="g-card g-edge p-4"
-          style={{ ["--edge" as string]: "#22c55e" }}
+          className="b-frame p-4 text-center"
+          style={{ borderColor: "rgba(34,197,94,.55)" }}
         >
-          <p className="font-bold text-emerald-400">
-            ✨ خلّصت مهمات النهارده كلها!
+          <p className="text-3xl" aria-hidden="true">
+            ✅
           </p>
-          <p className="text-xs text-slate-400 mt-1">نشوفك بكره عشان السلسلة تكمّل 🔥</p>
+          <p className="font-bold text-emerald-400 mt-1">
+            خلّصت مهمات النهارده كلها!
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            نشوفك بكره عشان السلسلة تكمّل 🔥
+          </p>
         </div>
       )}
 
@@ -59,7 +96,7 @@ export default async function HeroHome() {
         <Link
           href="/hero/rewards"
           data-tut="prize"
-          className="g-card g-glow-gold block p-4 text-center"
+          className="b-frame g-glow-gold block p-4 text-center relative overflow-hidden"
         >
           <Image
             src={GFX.crownGoldSm}
@@ -67,59 +104,97 @@ export default async function HeroHome() {
             width={96}
             height={96}
             aria-hidden="true"
-            className="w-8 h-8 mx-auto object-contain"
+            className="b-crown w-9 h-9 mx-auto object-contain"
           />
           <p className="text-[10px] tracking-[0.25em] text-amber-400 font-bold mt-1">
             جايزتك الجاية
           </p>
           <p className="text-5xl my-2">{PRIZE[nextPrize.level].emoji}</p>
-          <p className="font-bold text-white">{PRIZE[nextPrize.level].label}</p>
-          <p className="text-sm text-amber-400 font-bold mt-1.5">
-            فاضلك {nextPrize.xp_required - totalXp} نقطة
-          </p>
-          <p className="text-[11px] text-slate-400 mt-0.5" dir="ltr">
+          <p className="font-bold text-white text-lg">{PRIZE[nextPrize.level].label}</p>
+
+          <div className="flex items-center gap-2 mt-3">
+            <span className="b-bar block grow h-2 bg-black/50 overflow-hidden">
+              <span
+                style={{
+                  width: `${Math.min(100, Math.round((totalXp / nextPrize.xp_required) * 100))}%`,
+                }}
+              />
+            </span>
+            <span className="text-[11px] font-bold text-amber-400 shrink-0 tabular-nums">
+              فاضلك {nextPrize.xp_required - totalXp}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1" dir="ltr">
             LEVEL {String(nextPrize.level).padStart(2, "0")}
           </p>
         </Link>
       )}
 
+      {/* أكبر فرصة نقط في الأسبوع */}
+      <Link
+        href="/hero/weekly"
+        className="b-frame block p-4"
+        style={{ borderColor: "rgba(242,169,0,.35)" }}
+      >
+        <div className="flex items-center gap-3">
+          <Image
+            src={GFX.missionTeam}
+            alt=""
+            width={128}
+            height={128}
+            aria-hidden="true"
+            className="w-11 h-11 object-contain shrink-0"
+          />
+          <div className="grow min-w-0">
+            <p className="font-bold text-white text-sm">يوم الجمعة = كنز النقط</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              لو حضرت كل حاجة تاخد{" "}
+              <b className="text-amber-400 tabular-nums">+{fridayMax}</b> في يوم واحد
+            </p>
+          </div>
+          <span className="shrink-0 text-amber-400 font-bold text-sm">شوف ←</span>
+        </div>
+      </Link>
+
       {/* السلسلة */}
-      <section className="g-card p-4">
-        <h2 className="font-bold text-white mb-2 text-sm">🔥 السلسلة</h2>
-        <div className="grid grid-cols-2 gap-3 text-center">
-          <div>
-            <p className="text-3xl font-bold tabular-nums text-amber-400">
+      <section className="b-frame p-4">
+        <h2 className="sec-title font-bold text-white mb-3 text-sm">🔥 السلسلة</h2>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="g-tile p-3 text-center" style={{ ["--tint" as string]: "rgba(242,169,0,.45)" }}>
+            <p className="text-3xl font-bold tabular-nums text-amber-400 leading-none">
               {streak.current_streak}
             </p>
-            <p className="text-[11px] text-slate-400">دلوقتي</p>
+            <p className="text-[11px] text-slate-400 mt-1.5">دلوقتي</p>
           </div>
-          <div>
-            <p className="text-3xl font-bold tabular-nums text-white">
+          <div className="g-tile p-3 text-center">
+            <p className="text-3xl font-bold tabular-nums text-white leading-none">
               {streak.longest_streak}
             </p>
-            <p className="text-[11px] text-slate-400">أطول سلسلة</p>
+            <p className="text-[11px] text-slate-400 mt-1.5">أطول سلسلة</p>
           </div>
         </div>
         {streak.freezes_available > 0 && (
-          <p className="text-xs text-slate-400 mt-3 text-center">
+          <p className="text-xs text-cyan-300 mt-3 text-center">
             ❄️ معاك {streak.freezes_available} تجميدة — لو فاتك يوم سلسلتك مش هتقطع
           </p>
         )}
       </section>
 
+      {/* الترتيب */}
       <Link
         href="/board"
         data-tut="board"
-        className="g-card block p-3.5 text-center font-bold text-white hover:brightness-125 transition"
+        className="b-frame b-row block p-3.5 relative overflow-hidden"
+        style={{ ["--edge" as string]: "#f2a900" }}
       >
-        <span className="inline-flex items-center justify-center gap-2">
+        <span className="flex items-center justify-center gap-2 font-bold text-white">
           <Image
             src={GFX.trophyGold}
             alt=""
             width={128}
             height={128}
             aria-hidden="true"
-            className="w-7 h-7 object-contain"
+            className="w-8 h-8 object-contain"
           />
           شوف ترتيبك بين كل الأبطال
         </span>

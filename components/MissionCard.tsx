@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { completeMission } from "@/app/hero/actions";
 import { playPoint } from "@/lib/sound";
 import LevelUpOverlay from "@/components/LevelUpOverlay";
+import { GFX } from "@/lib/assets";
 
 export default function MissionCard({
   code,
@@ -79,10 +80,10 @@ export default function MissionCard({
       onClick={run}
       disabled={done || pending}
       aria-pressed={done}
-      className={`g-card g-edge w-full text-right p-4 transition active:scale-[0.99] ${
-        done ? "" : "hover:brightness-125"
+      className={`b-frame w-full text-right p-4 transition active:scale-[0.99] ${
+        done ? "" : "mission-live hover:brightness-110"
       }`}
-      style={{ ["--edge" as string]: done ? "#22c55e" : "#f2a900" }}
+      style={{ borderColor: done ? "rgba(34,197,94,.6)" : "rgba(242,169,0,.5)" }}
     >
       <div className="flex items-center gap-3">
         {icon && !done ? (
@@ -99,20 +100,28 @@ export default function MissionCard({
         )}
 
         <div className="grow min-w-0">
-          <p className={`font-bold ${done ? "text-emerald-400" : "text-white"}`}>
+          <p className={`font-bold text-[15px] ${done ? "text-emerald-400" : "text-white"}`}>
             {title}
           </p>
           <p className="text-xs text-slate-400 mt-0.5">{detail}</p>
         </div>
 
         <span
-          className={`shrink-0 font-bold px-2.5 py-1 text-sm border ${
+          className={`shrink-0 flex items-center gap-1 font-bold px-2 py-1 text-sm border ${
             done
               ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
               : "text-amber-400 border-amber-500/40 bg-amber-500/10"
           }`}
           dir="ltr"
         >
+          <Image
+            src={GFX.xpGold}
+            alt=""
+            width={96}
+            height={96}
+            aria-hidden="true"
+            className="w-4 h-4 object-contain"
+          />
           +{xp}
         </span>
       </div>
@@ -123,8 +132,8 @@ export default function MissionCard({
         </p>
       )}
       {!done && !msg && (
-        <p className="mt-2.5 text-xs text-amber-400/90 font-bold">
-          👆 اضغط لما تخلّصها
+        <p className="mt-3 text-center text-[13px] font-bold text-slate-950 bg-linear-to-l from-amber-500 to-amber-400 py-2">
+          👆 دوس هنا لما تخلّصها
         </p>
       )}
     </button>
