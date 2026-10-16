@@ -1,16 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { ensureStudentAccount, studentsWithoutCode } from "@/lib/student-code";
 
-/** بعد ما الخادم يطبّع الكروت ويوزّعها، بنمسح الأرقام السرية من قاعدة البيانات */
-export async function markPrinted() {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("student_accounts")
-    .update({ initial_pin: null, card_printed_at: new Date().toISOString() })
-    .not("initial_pin", "is", null);
+/** بيعمل كود لكل مخدوم نشط لسه ملهوش كود */
+export async function generateMissingCodes() {
+  const missing = await studentsWithoutCode();
 
-  if (error) throw new Error(error.message);
+  let created = 0;
+  const failed: string[] = [];
+
+  for (const s of missing) {
+    const res = await ensureStudentAccount(s.id);
+    if (res.ok && res.created) created++;
+    else if (!res.ok) failed.push(s.full_name);
+  }
+
   revalidatePath("/admin/cards");
+  revalidatePath("/students");
+  return { created, failed };
 }

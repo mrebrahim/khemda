@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AREAS, STAGES } from "@/lib/types";
+import { ensureStudentAccount } from "@/lib/student-code";
 
 /** بيسيب القيمة الفاضية null بدل نص فاضي */
 function clean(v: FormDataEntryValue | null): string | null {
@@ -72,7 +73,11 @@ export async function createStudent(
 
   if (error) return { error: `مشكلة في الحفظ: ${error.message}` };
 
+  // كل مخدوم جديد بياخد كود دخول على طول — الكارت والـQR بيتولّدوا منه
+  await ensureStudentAccount(created.id);
+
   revalidatePath("/students");
+  revalidatePath("/admin/cards");
   revalidatePath("/attendance/students");
   revalidatePath("/");
   redirect(`/students/${created.id}?added=1`);

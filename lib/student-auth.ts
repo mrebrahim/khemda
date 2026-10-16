@@ -85,11 +85,13 @@ export async function heroLogin(
   const supabase = await createClient();
   const { data } = await supabase
     .from("student_accounts")
-    .select("student_id, is_active")
+    .select("student_id, is_active, students!inner(is_active)")
     .eq("login_code", code)
     .maybeSingle();
 
-  if (!data || !data.is_active) {
+  // لازم الحساب والمخدوم نفسه يكونوا نشطين — المخدوم اللي اتوقف مايدخلش
+  const student = Array.isArray(data?.students) ? data.students[0] : data?.students;
+  if (!data || !data.is_active || !(student as { is_active?: boolean } | undefined)?.is_active) {
     return { ok: false, error: "الكود ده مش موجود — اتأكد منه تاني" };
   }
 

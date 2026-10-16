@@ -3,6 +3,10 @@ import NavBar from "@/components/NavBar";
 import { createClient } from "@/lib/supabase/server";
 import { STUDENT_FIELDS, formatArabicDate } from "@/lib/types";
 import { getRanks, rankFor, getActiveSeason } from "@/lib/xp";
+import { ensureStudentAccount } from "@/lib/student-code";
+import { qrDataUrl } from "@/lib/qr";
+import { getBaseUrl } from "@/lib/site";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +48,17 @@ export default async function StudentProfile({
     saint_name: string | null;
   } | null;
 
-  const [ranks, season] = await Promise.all([getRanks(), getActiveSeason()]);
+  // الكود بيتعمل لو مش موجود — فأي مخدوم تفتح صفحته يبقى معاه كود وQR
+  const [ranks, season, account, baseUrl] = await Promise.all([
+    getRanks(),
+    getActiveSeason(),
+    ensureStudentAccount(studentId),
+    getBaseUrl(),
+  ]);
+  const loginCode = account.ok ? account.code : null;
+  const qr = loginCode
+    ? await qrDataUrl(`${baseUrl}/hero/enter?c=${loginCode}`, 260)
+    : null;
   const { data: xpRows } = season
     ? await supabase
         .from("xp_ledger")
@@ -96,9 +110,63 @@ export default async function StudentProfile({
       <main className="max-w-4xl mx-auto px-3 py-4 space-y-4">
         {added === "1" && (
           <p className="bg-green-50 border border-green-300 text-green-800 rounded-2xl px-4 py-3 font-bold text-center">
-            ✅ اتضاف المخدوم، وهيظهر في كشف الحضور على طول
+            ✅ اتضاف المخدوم، وهيظهر في كشف الحضور على طول — وده كوده والـQR بتاعه
           </p>
         )}
+
+        {/* كود الدخول والـQR */}
+        <section className="bg-white rounded-2xl border border-slate-200 p-4">
+          <h2 className="font-bold text-slate-800 mb-3">🎫 كارت البطل</h2>
+
+          {loginCode ? (
+            <div className="flex items-center gap-4 flex-wrap">
+              {qr && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={qr}
+                  alt={`كود ${student.full_name}`}
+                  width={260}
+                  height={260}
+                  className="w-32 h-32 border border-slate-200 rounded-xl"
+                />
+              )}
+
+              <div className="grow min-w-[150px]">
+                <p className="text-xs text-slate-500">كود الدخول</p>
+                <p
+                  className="font-bold text-3xl tracking-[0.25em] text-slate-900 tabular-nums"
+                  dir="ltr"
+                >
+                  {loginCode}
+                </p>
+                <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                  الولد يمسح الـQR بكاميرا الموبايل فيدخل اللعبة على طول،
+                  أو يكتب الكود في صفحة الدخول.
+                </p>
+
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Link
+                    href={`/admin/cards?stage=${encodeURIComponent(cls?.stage ?? "")}&area=${encodeURIComponent(cls?.area ?? "")}`}
+                    className="text-xs font-bold bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 transition"
+                  >
+                    اطبع كارت فصله
+                  </Link>
+                  <a
+                    href={qr ?? "#"}
+                    download={`${student.full_name}.png`}
+                    className="text-xs font-bold border border-slate-300 text-slate-700 px-3 py-2 rounded-lg hover:border-brand-400 transition"
+                  >
+                    نزّل الـQR صورة
+                  </a>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+              مقدرناش نعمل كود للمخدوم ده: {account.ok ? "" : account.error}
+            </p>
+          )}
+        </section>
 
         {/* النقاط والرتبة */}
         {season && (

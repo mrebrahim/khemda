@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { qrDataUrl } from "@/lib/qr";
 import { getBaseUrl } from "@/lib/site";
 import { STAGES, AREAS } from "@/lib/types";
+import { studentsWithoutCode } from "@/lib/student-code";
+import MissingCodesCard from "@/components/MissingCodesCard";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +37,7 @@ export default async function CardsPage({
   const supabase = await createClient();
   const baseUrl = await getBaseUrl();
 
-  const [{ data: accounts }, { data: servantRows }] = await Promise.all([
+  const [{ data: accounts }, { data: servantRows }, missing] = await Promise.all([
     supabase
       .from("student_accounts")
       .select(
@@ -47,6 +49,7 @@ export default async function CardsPage({
       .select("full_name, class_id")
       .eq("is_active", true)
       .order("full_name"),
+    studentsWithoutCode(),
   ]);
 
   const servantsOf = new Map<number, string[]>();
@@ -129,6 +132,10 @@ export default async function CardsPage({
       </div>
 
       <main className="max-w-5xl mx-auto px-3 py-4">
+        <div className="mb-4">
+          <MissingCodesCard students={missing} />
+        </div>
+
         <section className="bg-white rounded-2xl border border-slate-200 p-4 mb-4 print:hidden">
           <h2 className="font-bold text-slate-800">
             {raw.length} كارت في {groups.length} فصل
