@@ -3,22 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { AREAS, STAGES } from "@/lib/types";
+import { readStudentForm } from "@/lib/student-input";
 import { ensureStudentAccount } from "@/lib/student-code";
-
-/** بيسيب القيمة الفاضية null بدل نص فاضي */
-function clean(v: FormDataEntryValue | null): string | null {
-  const s = String(v ?? "").trim().replace(/\s+/g, " ");
-  return s.length > 0 ? s : null;
-}
-
-/** بيشيل أي حاجة مش رقم، وبيزوّد صفر لو الرقم ناقصه */
-function cleanPhone(v: FormDataEntryValue | null): string | null {
-  const digits = String(v ?? "").replace(/\D/g, "");
-  if (!digits) return null;
-  if (digits.length === 10 && digits.startsWith("1")) return "0" + digits;
-  return digits;
-}
 
 export type NewStudentState = { error: string | null } | null;
 
@@ -26,30 +12,17 @@ export async function createStudent(
   _prev: NewStudentState,
   formData: FormData,
 ): Promise<NewStudentState> {
-  const fullName = clean(formData.get("full_name"));
-  const area = clean(formData.get("area"));
-  const stage = clean(formData.get("stage"));
-
-  if (!fullName) return { error: "اكتب اسم المخدوم" };
-  if (!area || !(AREAS as readonly string[]).includes(area)) {
-    return { error: "اختار المنطقة" };
-  }
-  if (!stage || !(STAGES as readonly string[]).includes(stage)) {
-    return { error: "اختار المرحلة" };
-  }
-
-  const birthDate = clean(formData.get("birth_date"));
-  if (birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
-    return { error: "تاريخ الميلاد مش مظبوط" };
-  }
+  const parsed = readStudentForm(formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const v = parsed.value;
 
   const supabase = await createClient();
 
   const { data: cls, error: clsError } = await supabase
     .from("classes")
     .select("id")
-    .eq("area", area)
-    .eq("stage", stage)
+    .eq("area", v.area)
+    .eq("stage", v.stage)
     .maybeSingle();
 
   if (clsError) return { error: `مشكلة في قراءة الفصل: ${clsError.message}` };
@@ -58,15 +31,15 @@ export async function createStudent(
   const { data: created, error } = await supabase
     .from("students")
     .insert({
-      full_name: fullName,
+      full_name: v.full_name,
       class_id: cls.id,
-      phone: cleanPhone(formData.get("phone")),
-      father_phone: cleanPhone(formData.get("father_phone")),
-      mother_phone: cleanPhone(formData.get("mother_phone")),
-      address: clean(formData.get("address")),
-      birth_date: birthDate,
-      confession_father: clean(formData.get("confession_father")),
-      notes: clean(formData.get("notes")),
+      phone: v.phone,
+      father_phone: v.father_phone,
+      mother_phone: v.mother_phone,
+      address: v.address,
+      birth_date: v.birth_date,
+      confession_father: v.confession_father,
+      notes: v.notes,
     })
     .select("id")
     .single();

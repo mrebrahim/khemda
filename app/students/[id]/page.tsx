@@ -23,10 +23,10 @@ export default async function StudentProfile({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ added?: string }>;
+  searchParams: Promise<{ added?: string; saved?: string }>;
 }) {
   const { id } = await params;
-  const { added } = await searchParams;
+  const { added, saved } = await searchParams;
   const studentId = Number(id);
   if (!Number.isInteger(studentId)) notFound();
 
@@ -35,7 +35,7 @@ export default async function StudentProfile({
   const { data: student } = await supabase
     .from("students")
     .select(
-      "id, full_name, phone, father_phone, mother_phone, address, birth_date, confession_father, notes, classes(area, stage, saint_name)",
+      "id, full_name, phone, father_phone, mother_phone, address, birth_date, confession_father, notes, is_active, classes(area, stage, saint_name)",
     )
     .eq("id", studentId)
     .maybeSingle();
@@ -108,6 +108,26 @@ export default async function StudentProfile({
     <>
       <NavBar title={student.full_name} back="/students" />
       <main className="max-w-4xl mx-auto px-3 py-4 space-y-4">
+        {saved === "1" && (
+          <p className="bg-green-50 border border-green-300 text-green-800 rounded-2xl px-4 py-3 font-bold text-center">
+            ✅ البيانات اتحفظت
+          </p>
+        )}
+
+        {!student.is_active && (
+          <p className="bg-slate-100 border border-slate-300 text-slate-700 rounded-2xl px-4 py-3 text-sm text-center">
+            ⏸️ المخدوم ده موقوف — مش ظاهر في كشوف الحضور ولا بيقدر يدخل اللعبة.
+          </p>
+        )}
+
+        <div className="flex justify-end">
+          <Link
+            href={`/students/${studentId}/edit`}
+            className="rounded-xl bg-brand-600 text-white font-bold px-4 py-2.5 hover:bg-brand-700 transition"
+          >
+            ✏️ عدّل البيانات
+          </Link>
+        </div>
         {added === "1" && (
           <p className="bg-green-50 border border-green-300 text-green-800 rounded-2xl px-4 py-3 font-bold text-center">
             ✅ اتضاف المخدوم، وهيظهر في كشف الحضور على طول — وده كوده والـQR بتاعه
