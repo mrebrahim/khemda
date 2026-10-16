@@ -60,6 +60,17 @@ export default async function ReportsPage() {
     <>
       <NavBar title="التقارير" back="/" />
       <main className="max-w-4xl mx-auto px-3 py-4 space-y-4">
+        <Link
+          href={`/reports/day?date=${list[0].session_date}`}
+          className="block bg-white rounded-2xl border border-slate-200 p-4 hover:border-brand-400 transition"
+        >
+          <p className="font-bold text-slate-800">📊 تقرير اليوم بالفصول</p>
+          <p className="text-sm text-slate-600 mt-1">
+            كل فصل لوحده (المرحلة والمنطقة) — حضر كام وقداس وتناول وخدمة وتسبحة
+          </p>
+          <p className="text-xs text-brand-700 font-bold mt-2">افتح التقرير ←</p>
+        </Link>
+
         <section className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
           <h2 className="font-bold text-slate-700 px-4 pt-4 pb-2">المخدومين</h2>
           <table className="w-full text-sm">

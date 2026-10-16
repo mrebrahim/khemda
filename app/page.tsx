@@ -48,6 +48,12 @@ export default async function HomePage() {
       desc: "كشف نصّي جاهز للنسخ لكل خادم",
     },
     {
+      href: "/reports/day",
+      emoji: "📊",
+      title: "تقرير الجمعة بالفصول",
+      desc: "كل فصل لوحده: حضر كام • قداس • تناول • خدمة • تسبحة",
+    },
+    {
       href: "/nudge",
       emoji: "🔔",
       title: "تذكير الأبطال",
