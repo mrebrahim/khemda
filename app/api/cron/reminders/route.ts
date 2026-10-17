@@ -203,5 +203,52 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, hour, date: today, ...stats });
+  // تذكير المشرف ينزّل بوست اليوم على الجروب — في جولة الصبح بس
+  let adminSent = 0;
+  if (hour >= 6 && hour <= 9) {
+    const { data: adminSubs } = await supabase
+      .from("admin_push")
+      .select("id, endpoint, p256dh, auth")
+      .eq("is_active", true);
+
+    const isFriday = new Date(`${today}T12:00:00Z`).getUTCDay() === 5;
+    const adminPayload = JSON.stringify({
+      title: isFriday ? "🎨 بوست الجمعة جاهز" : "🎨 بوست النهارده جاهز",
+      body: "نزّله على الجروب عشان الولاد يفتحوا ويعملوا مهماتهم",
+      url: "/daily-post",
+      tag: "admin-post",
+    });
+
+    for (const sub of adminSubs ?? []) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          adminPayload,
+        );
+        adminSent++;
+        await supabase
+          .from("admin_push")
+          .update({ last_sent_at: new Date().toISOString(), fail_count: 0 })
+          .eq("id", sub.id);
+      } catch (e) {
+        const code = (e as { statusCode?: number }).statusCode;
+        if (code === 404 || code === 410) {
+          await supabase.from("admin_push").update({ is_active: false }).eq("id", sub.id);
+        } else {
+          const { data: row } = await supabase
+            .from("admin_push")
+            .select("fail_count")
+            .eq("id", sub.id)
+            .maybeSingle();
+          const next = (row?.fail_count ?? 0) + 1;
+          await supabase
+            .from("admin_push")
+            .update({ fail_count: next, is_active: next < 5 })
+            .eq("id", sub.id);
+        }
+      }
+    }
+  }
+
+  return NextResponse.json({ ok: true, hour, date: today, adminSent, ...stats });
 }
