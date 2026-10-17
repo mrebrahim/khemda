@@ -6,6 +6,7 @@ import { completeMission } from "@/app/hero/actions";
 import { playPoint } from "@/lib/sound";
 import LevelUpOverlay from "@/components/LevelUpOverlay";
 import { GFX } from "@/lib/assets";
+import MissionTimer from "@/components/MissionTimer";
 
 export default function MissionCard({
   code,
@@ -15,6 +16,10 @@ export default function MissionCard({
   done: initialDone,
   emoji,
   icon,
+  locked = false,
+  lockReason,
+  seconds,
+  timerLabel,
 }: {
   code: "prayer" | "bible";
   title: string;
@@ -24,6 +29,12 @@ export default function MissionCard({
   emoji: string;
   /** أيقونة WebP اختيارية — لو مابعتهاش بيستخدم الإيموجي */
   icon?: string;
+  /** مقفولة لسه: المهمات ما فتحتش، أو المهمة اللي قبلها لسه ماخلصتش */
+  locked?: boolean;
+  lockReason?: string;
+  /** العدّاد: فاضل كام ثانية على القفل (لو مفتوحة) أو على الفتح */
+  seconds: number;
+  timerLabel: string;
 }) {
   const [done, setDone] = useState(initialDone);
   const [msg, setMsg] = useState<string | null>(null);
@@ -35,7 +46,7 @@ export default function MissionCard({
   const [pending, startTransition] = useTransition();
 
   function run() {
-    if (done || pending) return;
+    if (done || pending || locked) return;
     setDone(true); // رد فعل فوري
     startTransition(async () => {
       try {
@@ -78,15 +89,23 @@ export default function MissionCard({
     <button
       type="button"
       onClick={run}
-      disabled={done || pending}
+      disabled={done || pending || locked}
       aria-pressed={done}
       className={`b-frame w-full text-right p-4 transition active:scale-[0.99] ${
-        done ? "" : "mission-live hover:brightness-110"
-      }`}
-      style={{ borderColor: done ? "rgba(34,197,94,.6)" : "rgba(242,169,0,.5)" }}
+        done || locked ? "" : "mission-live hover:brightness-110"
+      } ${locked ? "opacity-75" : ""}`}
+      style={{
+        borderColor: done
+          ? "rgba(34,197,94,.6)"
+          : locked
+            ? "rgba(255,255,255,.15)"
+            : "rgba(242,169,0,.5)",
+      }}
     >
       <div className="flex items-center gap-3">
-        {icon && !done ? (
+        {locked ? (
+          <span className="text-3xl shrink-0 grayscale opacity-70">🔒</span>
+        ) : icon && !done ? (
           <Image
             src={icon}
             alt=""
@@ -103,7 +122,9 @@ export default function MissionCard({
           <p className={`font-bold text-[15px] ${done ? "text-emerald-400" : "text-white"}`}>
             {title}
           </p>
-          <p className="text-xs text-slate-400 mt-0.5">{detail}</p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {locked && lockReason ? lockReason : detail}
+          </p>
         </div>
 
         <span
@@ -126,12 +147,20 @@ export default function MissionCard({
         </span>
       </div>
 
+      <div className="mt-2.5">
+        <MissionTimer
+          seconds={seconds}
+          label={timerLabel}
+          tone={done ? "green" : locked ? "slate" : "amber"}
+        />
+      </div>
+
       {msg && (
         <p className="mt-3 text-sm font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-3 py-2">
           {msg}
         </p>
       )}
-      {!done && !msg && (
+      {!done && !locked && !msg && (
         <p className="mt-3 text-center text-[13px] font-bold text-slate-950 bg-linear-to-l from-amber-500 to-amber-400 py-2">
           👆 دوس هنا لما تخلّصها
         </p>

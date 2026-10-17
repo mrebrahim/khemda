@@ -152,18 +152,18 @@ export default function ReminderCard({ prefs }: { prefs: ReminderPrefs }) {
       <p className="text-[11px] text-slate-400 mt-4 mb-1.5">نفكّرك إمتى؟</p>
       <div className="grid grid-cols-2 gap-2">
         <Choice
-          on={local.slot === "evening"}
-          onClick={() => save({ slot: "evening" })}
+          on={local.slot === "morning"}
+          onClick={() => save({ slot: "morning" })}
           disabled={pending}
-          label="بعد المدرسة"
-          hint="حوالي ٧ المسا"
+          label="أول ما تفتح"
+          hint="٧ الصبح"
         />
         <Choice
           on={local.slot === "night"}
           onClick={() => save({ slot: "night" })}
           disabled={pending}
           label="قبل ما أنام"
-          hint="حوالي ١٠ بالليل"
+          hint="بالليل"
         />
       </div>
 

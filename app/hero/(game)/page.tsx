@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { loadHero } from "@/lib/hero-data";
 import WeekStrip from "@/components/WeekStrip";
+import MissionTimer from "@/components/MissionTimer";
 import { PRIZE } from "@/lib/prizes";
 import { GFX } from "@/lib/assets";
 
@@ -11,7 +12,7 @@ export default async function HeroHome() {
   const state = await loadHero();
   if (!state) return null;
 
-  const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour } = state;
+  const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour, window: win } = state;
   const level = rank.current?.level ?? 1;
   const nextPrize = ranks
     .filter((r) => PRIZE[r.level] && r.level > level)
@@ -21,7 +22,7 @@ export default async function HeroHome() {
   const goal = prefs.daily_goal;
   const todoCount = Math.max(0, goal - done);
   // بعد ٩ بالليل والسلسلة على وشك تقطع = وقت التحذير
-  const lastChance = state.atRisk && todoCount > 0 && hour >= 21;
+  const lastChance = state.atRisk && todoCount > 0 && hour >= 21 && win.open;
   const xpOf = (code: string) => rules.find((r) => r.code === code)?.xp ?? 0;
   const todayXp = xpOf("prayer") + xpOf("bible");
 
@@ -44,7 +45,24 @@ export default async function HeroHome() {
       )}
 
       {/* مهمة النهارده */}
-      {todoCount > 0 ? (
+      {todoCount > 0 && !win.open ? (
+        <div
+          data-tut="today"
+          className="b-frame p-4 text-center"
+          style={{ borderColor: "rgba(255,255,255,.15)" }}
+        >
+          <p className="text-3xl" aria-hidden="true">
+            🔒
+          </p>
+          <p className="font-bold text-white mt-1">المهمات بتفتح ٧ الصبح</p>
+          <p className="text-xs text-slate-400 mt-1">
+            جهّز نفسك — أول ما تفتح تاخد نقطك
+          </p>
+          <div className="mt-2.5">
+            <MissionTimer seconds={win.secondsToOpen} label="تفتح بعد" tone="slate" />
+          </div>
+        </div>
+      ) : todoCount > 0 ? (
         <Link
           href="/hero/daily"
           data-tut="today"
@@ -75,6 +93,10 @@ export default async function HeroHome() {
             <span className="shrink-0 text-amber-400 font-bold text-sm">يلا ←</span>
           </div>
 
+          <div className="mt-2.5">
+            <MissionTimer seconds={win.secondsToClose} label="فاضل" />
+          </div>
+
           {/* تقدّم النهارده */}
           <div className="flex items-center gap-2 mt-3">
             <span className="b-bar block grow h-1.5 bg-black/50 overflow-hidden">
@@ -100,6 +122,13 @@ export default async function HeroHome() {
           <p className="text-xs text-slate-400 mt-1">
             نشوفك بكره عشان السلسلة تكمّل 🔥
           </p>
+          <div className="mt-2.5">
+            <MissionTimer
+              seconds={win.secondsToNextOpen}
+              label="مهمات بكره بتفتح بعد"
+              tone="green"
+            />
+          </div>
         </div>
       )}
 

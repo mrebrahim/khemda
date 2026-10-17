@@ -11,9 +11,27 @@ export default async function DailyPage() {
   const state = await loadHero();
   if (!state) return null;
 
-  const { rules, doneToday, streak, atRisk, week, prefs } = state;
+  const { rules, doneToday, streak, atRisk, week, prefs, window: win } = state;
   const xpOf = (code: string) => rules.find((r) => r.code === code)?.xp ?? 0;
   const bothDone = doneToday.size >= prefs.daily_goal;
+
+  const prayerDone = doneToday.has("prayer");
+  const bibleDone = doneToday.has("bible");
+
+  // كل مهمة ليها حالة: مقفولة / مفتوحة / خلصت — والعدّاد بيتغيّر معاها
+  function timerFor(done: boolean, locked: boolean) {
+    if (done) {
+      return { seconds: win.secondsToNextOpen, label: "تفتح تاني بعد" };
+    }
+    if (locked && !win.open) {
+      return { seconds: win.secondsToOpen, label: "تفتح بعد" };
+    }
+    return { seconds: win.secondsToClose, label: "فاضل" };
+  }
+
+  const prayerTimer = timerFor(prayerDone, !win.open);
+  const bibleLocked = !win.open || !prayerDone;
+  const bibleTimer = timerFor(bibleDone, bibleLocked);
 
   return (
     <div className="space-y-3">
@@ -21,6 +39,15 @@ export default async function DailyPage() {
         <h2 className="font-bold text-white tracking-wide">☀️ مهمات النهارده</h2>
         <span className="text-[11px] text-slate-400">بتسجّلها بنفسك</span>
       </div>
+
+      {!win.open && (
+        <div className="b-frame p-3.5 text-center">
+          <p className="font-bold text-white">🌙 المهمات لسه مقفولة</p>
+          <p className="text-xs text-slate-400 mt-1">
+            بتفتح كل يوم الساعة ٧ الصبح — تعالى بدري وخد نقطك
+          </p>
+        </div>
+      )}
 
       {atRisk && !bothDone && (
         <div className="g-card g-glow-bronze p-3.5 text-center">
@@ -40,7 +67,11 @@ export default async function DailyPage() {
         title="مهمة الصلاة اليومية"
         detail="أبانا الذي • صلاة الشكر • مزمور ٥٠"
         xp={xpOf("prayer")}
-        done={doneToday.has("prayer")}
+        done={prayerDone}
+        locked={!win.open}
+        lockReason="بتفتح ٧ الصبح"
+        seconds={prayerTimer.seconds}
+        timerLabel={prayerTimer.label}
       />
 
       <MissionCard
@@ -50,7 +81,13 @@ export default async function DailyPage() {
         title="رحلة الكتاب المقدس"
         detail="اقرا إصحاح واحد على الأقل"
         xp={xpOf("bible")}
-        done={doneToday.has("bible")}
+        done={bibleDone}
+        locked={bibleLocked}
+        lockReason={
+          !win.open ? "بتفتح ٧ الصبح" : "تفتح لما تخلّص مهمة الصلاة"
+        }
+        seconds={bibleTimer.seconds}
+        timerLabel={bibleTimer.label}
       />
 
       {bothDone && (

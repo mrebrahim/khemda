@@ -7,7 +7,7 @@ import { currentHero, heroLogin, heroLogout } from "@/lib/student-auth";
 import { touchStreak } from "@/lib/streak";
 import { award, getRanks, getActiveSeason, rankFor } from "@/lib/xp";
 import { todayISO } from "@/lib/types";
-import { savePrefs, shiftDate } from "@/lib/habits";
+import { missionWindow, OPEN_HOUR, savePrefs, shiftDate } from "@/lib/habits";
 
 export async function loginAction(_prev: unknown, formData: FormData) {
   const res = await heroLogin(String(formData.get("code") ?? ""));
@@ -27,8 +27,35 @@ export async function completeMission(ruleCode: "prayer" | "bible") {
   const hero = await currentHero();
   if (!hero) return { ok: false as const, error: "لازم تسجّل دخول" };
 
+  // المهمات بتفتح ٧ الصبح — قبل كده مش مسموح
+  const win = missionWindow();
+  if (!win.open) {
+    return {
+      ok: false as const,
+      error: `المهمات بتفتح الساعة ${OPEN_HOUR} الصبح — استنى شوية`,
+    };
+  }
+
   const today = todayISO();
   const supabase = await createClient();
+
+  // مهمة الكتاب بتفتح بعد ما يخلّص الصلاة
+  if (ruleCode === "bible") {
+    const { data: prayerDone } = await supabase
+      .from("daily_missions")
+      .select("rule_code")
+      .eq("student_id", hero.studentId)
+      .eq("on_date", today)
+      .eq("rule_code", "prayer")
+      .maybeSingle();
+
+    if (!prayerDone) {
+      return {
+        ok: false as const,
+        error: "خلّص مهمة الصلاة الأول عشان دي تفتح",
+      };
+    }
+  }
 
   // القيد الفريد (student, rule, date) هو اللي بيمنع التكرار فعليًا
   const { error } = await supabase.from("daily_missions").insert({
@@ -148,7 +175,7 @@ export async function claimReward(level: number) {
 /** الولد بيظبط تذكيره: يشتغل ولا لأ، الميعاد، هدفه اليومي */
 export async function saveReminderPrefs(patch: {
   reminders_on?: boolean;
-  slot?: "evening" | "night";
+  slot?: "morning" | "night";
   daily_goal?: 1 | 2;
   pause_days?: number;
 }) {
@@ -157,7 +184,7 @@ export async function saveReminderPrefs(patch: {
 
   const clean: Record<string, unknown> = {};
   if (typeof patch.reminders_on === "boolean") clean.reminders_on = patch.reminders_on;
-  if (patch.slot === "evening" || patch.slot === "night") clean.slot = patch.slot;
+  if (patch.slot === "morning" || patch.slot === "night") clean.slot = patch.slot;
   if (patch.daily_goal === 1 || patch.daily_goal === 2) clean.daily_goal = patch.daily_goal;
   if (typeof patch.pause_days === "number") {
     // وقف التذكير لمدة محدودة بس — أقصاها أسبوع

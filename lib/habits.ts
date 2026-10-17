@@ -2,7 +2,10 @@ import "server-only";
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { todayISO } from "@/lib/types";
 
-export type ReminderSlot = "evening" | "night";
+export type ReminderSlot = "morning" | "night";
+
+/** المهمات بتفتح الساعة ٧ الصبح بتوقيت مصر وبتقفل نص الليل */
+export const OPEN_HOUR = 7;
 
 export type ReminderPrefs = {
   reminders_on: boolean;
@@ -13,7 +16,7 @@ export type ReminderPrefs = {
 
 export const DEFAULT_PREFS: ReminderPrefs = {
   reminders_on: true,
-  slot: "evening",
+  slot: "morning",
   daily_goal: 2,
   paused_until: null,
 };
@@ -40,6 +43,55 @@ export function daysBetween(from: string, to: string): number {
   return Math.round(
     (Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000,
   );
+}
+
+/** ثواني عدّت من نص الليل بتوقيت مصر */
+export function cairoSecondsOfDay(now: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Cairo",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+  // بعض المناطق بترجّع 24 بدل 0 في منتصف الليل
+  const h = get("hour") % 24;
+  return h * 3600 + get("minute") * 60 + get("second");
+}
+
+export type MissionWindow = {
+  /** المهمات مفتوحة دلوقتي؟ */
+  open: boolean;
+  /** لو مقفولة: فاضل كام ثانية على ما تفتح */
+  secondsToOpen: number;
+  /** لو مفتوحة: فاضل كام ثانية على ما تقفل (نص الليل) */
+  secondsToClose: number;
+  /** فاضل كام ثانية على فتح بكره — للمهمة اللي خلّصها */
+  secondsToNextOpen: number;
+};
+
+const DAY = 86_400;
+
+export function missionWindow(now: Date = new Date()): MissionWindow {
+  const sec = cairoSecondsOfDay(now);
+  const openAt = OPEN_HOUR * 3600;
+
+  if (sec < openAt) {
+    return {
+      open: false,
+      secondsToOpen: openAt - sec,
+      secondsToClose: 0,
+      secondsToNextOpen: openAt - sec,
+    };
+  }
+
+  return {
+    open: true,
+    secondsToOpen: 0,
+    secondsToClose: DAY - sec,
+    secondsToNextOpen: DAY - sec + openAt,
+  };
 }
 
 export async function getPrefs(studentId: number): Promise<ReminderPrefs> {
@@ -162,7 +214,8 @@ export function pickReminder(input: {
 
   // التذكير العادي في الميعاد اللي اختاره
   if (!input.sentToday.has("daily")) {
-    const inSlot = slot === "night" ? isLate : hour >= 16 && hour <= 20;
+    // الصبح: أول ما المهمات تفتح. بالليل: قبل ما ينام.
+    const inSlot = slot === "night" ? isLate : hour >= 6 && hour <= 9;
     if (inSlot) return "daily";
   }
 

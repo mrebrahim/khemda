@@ -4,7 +4,15 @@ import { currentHero, isConfigured, type HeroSession } from "@/lib/student-auth"
 import { hasServiceRole } from "@/lib/supabase/admin";
 import { getRanks, rankFor, getActiveSeason, getRules, type Rank, type ActivityRule } from "@/lib/xp";
 import { getStreak, streakAtRisk, type Streak } from "@/lib/streak";
-import { cairoHour, getPrefs, weekOf, type DayCell, type ReminderPrefs } from "@/lib/habits";
+import {
+  cairoHour,
+  getPrefs,
+  missionWindow,
+  weekOf,
+  type DayCell,
+  type MissionWindow,
+  type ReminderPrefs,
+} from "@/lib/habits";
 import { todayISO } from "@/lib/types";
 
 export type HeroState = {
@@ -23,6 +31,8 @@ export type HeroState = {
   prefs: ReminderPrefs;
   /** الساعة بتوقيت مصر — عشان بانر «آخر فرصة» */
   hour: number;
+  /** نافذة المهمات: بتفتح ٧ الصبح وبتقفل نص الليل */
+  window: MissionWindow;
 };
 
 export function missingConfig(): string[] {
@@ -81,5 +91,6 @@ export async function loadHero(): Promise<HeroState | null> {
     week,
     prefs,
     hour: cairoHour(),
+    window: missionWindow(),
   };
 }

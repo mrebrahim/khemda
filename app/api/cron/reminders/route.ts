@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /** رسايل مختلفة عشان التنبيه ما يبقاش ممل ولا متوقّع */
-function message(kind: ReminderKind, streak: number, left: number) {
+function message(kind: ReminderKind, streak: number, left: number, isMorning: boolean) {
   if (kind === "last_chance") {
     return streak >= 7
       ? {
@@ -33,6 +33,19 @@ function message(kind: ReminderKind, streak: number, left: number) {
     return {
       title: "😢 وحشتنا يا بطل",
       body: "ارجع دلوقتي وابدأ سلسلة جديدة — نقطك مستنياك",
+    };
+  }
+
+  if (isMorning) {
+    if (streak >= 7) {
+      return {
+        title: `🔓 المهمات فتحت — سلسلتك ${streak} يوم!`,
+        body: "دقيقة واحدة دلوقتي وتفضل مكمّلة 🔥",
+      };
+    }
+    return {
+      title: "🔓 المهمات فتحت!",
+      body: `صلاة + إصحاح = +${left} نقطة في رصيدك`,
     };
   }
 
@@ -145,7 +158,7 @@ export async function GET(request: Request) {
     }
 
     const payload = JSON.stringify({
-      ...message(kind, streak, Math.max(1, goal - done)),
+      ...message(kind, streak, Math.max(1, goal - done), hour >= 6 && hour <= 9),
       url: "/hero/daily",
       tag: kind,
     });
