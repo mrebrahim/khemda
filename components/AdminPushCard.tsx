@@ -11,8 +11,20 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
 
-/** المشرف بيشغّل تنبيه البوست اليومي على موبايله */
-export default function AdminPushCard() {
+/** المشرف بيشغّل تنبيهات الخدمة على موبايله */
+export default function AdminPushCard({
+  heading = "🔔 أفكّرك كل يوم ٧ بالليل؟",
+  body = "أول ما المهمات تفتح، يجي لك تنبيه على الموبايل فيه رابط الصفحة دي جاهزة بتصميم اليوم.",
+  button = "فكّرني كل يوم",
+  doneTitle = "🔔 التذكير شغّال — هيوصلك كل يوم ٧ بالليل",
+  doneBody = "التنبيه هيفتح لك الصفحة دي على طول عشان تنزّل البوست.",
+}: {
+  heading?: string;
+  body?: string;
+  button?: string;
+  doneTitle?: string;
+  doneBody?: string;
+} = {}) {
   const [state, setState] = useState<State>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -73,12 +85,8 @@ export default function AdminPushCard() {
   if (state === "granted") {
     return (
       <section className="bg-green-50 border border-green-300 rounded-2xl p-3.5">
-        <p className="font-bold text-green-800 text-sm">
-          🔔 التذكير شغّال — هيوصلك كل يوم ٧ بالليل
-        </p>
-        <p className="text-xs text-green-700 mt-1">
-          التنبيه هيفتح لك الصفحة دي على طول عشان تنزّل البوست.
-        </p>
+        <p className="font-bold text-green-800 text-sm">{doneTitle}</p>
+        <p className="text-xs text-green-700 mt-1">{doneBody}</p>
       </section>
     );
   }
@@ -96,18 +104,15 @@ export default function AdminPushCard() {
 
   return (
     <section className="bg-amber-50 border border-amber-300 rounded-2xl p-4">
-      <h2 className="font-bold text-amber-900">🔔 أفكّرك كل يوم ٧ بالليل؟</h2>
-      <p className="text-sm text-amber-800 mt-1 leading-relaxed">
-        أول ما المهمات تفتح، يجي لك تنبيه على الموبايل فيه رابط الصفحة دي
-        جاهزة بتصميم اليوم.
-      </p>
+      <h2 className="font-bold text-amber-900">{heading}</h2>
+      <p className="text-sm text-amber-800 mt-1 leading-relaxed">{body}</p>
       <button
         type="button"
         onClick={enable}
         disabled={state === "working"}
         className="mt-3 w-full rounded-xl bg-amber-600 text-white font-bold py-2.5 hover:bg-amber-700 disabled:opacity-60 transition"
       >
-        {state === "working" ? "ثانية..." : "فكّرني كل يوم"}
+        {state === "working" ? "ثانية..." : button}
       </button>
       {error && <p className="text-red-700 text-xs mt-2">{error}</p>}
     </section>

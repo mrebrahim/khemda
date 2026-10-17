@@ -2,6 +2,7 @@ import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import EventCountdown from "@/components/EventCountdown";
 import MigrationNeeded from "@/components/MigrationNeeded";
+import AdminPushCard from "@/components/AdminPushCard";
 import { createClient } from "@/lib/supabase/server";
 import { cairoSecondsOfDay } from "@/lib/habits";
 import {
@@ -66,6 +67,14 @@ export default async function EventsHubPage() {
           </p>
           <p className="text-xs text-slate-500 mt-2">النهاردة {formatArabicDate(today)}</p>
         </section>
+
+        <AdminPushCard
+          heading="🔔 أنبّهك في كل معاد؟"
+          body="تنبيه على موبايلك في التسبحة والمسابقة والقداس ومدارس الأحد، بيفتح شاشة التسجيل على طول عشان تدوس على اللي حضروا."
+          button="نبّهني في كل معاد"
+          doneTitle="🔔 التنبيهات شغّالة — هتوصلك في كل معاد"
+          doneBody="التسبحة الأحد ٧ م • المسابقة الخميس ٩ م • القداس الجمعة ٧ ص • مدارس الأحد ٢ م"
+        />
 
         {cards.map(({ ev, date, count, places, timing, xp }) => (
           <Link
