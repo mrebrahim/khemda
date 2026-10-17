@@ -34,6 +34,12 @@ export default async function HomePage() {
       unit: "خادم",
     },
     {
+      href: "/events",
+      emoji: "⏱️",
+      title: "مواعيد الخدمة والبونص",
+      desc: "تسبحة الأحد • مسابقة الخميس • قداس الجمعة • مدارس الأحد — سجّل والنقط تنزل",
+    },
+    {
       href: "/students",
       emoji: "📋",
       title: "بيانات المخدومين",

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import webpush from "web-push";
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import {
@@ -10,6 +11,7 @@ import {
   shiftDate,
   type ReminderKind,
 } from "@/lib/habits";
+import { dueEvents } from "@/lib/events";
 import { todayISO } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -67,11 +69,38 @@ function message(kind: ReminderKind, streak: number, left: number, justOpened: b
   };
 }
 
+/**
+ * الكرون بيجي من مكانين: Vercel Cron بسر البيئة، وجدول pg_cron في
+ * سوپابيز بسر متخزّن في الداتابيز نفسها (الريبو عام فمفيش سر في الكود).
+ */
+async function authorized(auth: string | null): Promise<boolean> {
+  if (!auth || !auth.startsWith("Bearer ")) return false;
+  const token = auth.slice(7);
+  if (token.length < 16) return false;
+
+  const envSecret = process.env.CRON_SECRET;
+  if (envSecret && safeEqual(token, envSecret)) return true;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("app_secrets")
+    .select("value")
+    .eq("name", "cron")
+    .maybeSingle();
+  return Boolean(data?.value) && safeEqual(token, data!.value);
+}
+
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
 export async function GET(request: Request) {
   // Vercel Cron بيبعت الهيدر ده. في غير كده لازم السر.
   const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!(await authorized(auth))) {
     return NextResponse.json({ error: "غير مصرّح" }, { status: 401 });
   }
 
@@ -84,6 +113,14 @@ export async function GET(request: Request) {
 
   const today = todayISO();
   const hour = cairoHour();
+  const due = dueEvents(today, hour);
+
+  // الكرون بيدق كل ساعة. أغلب الساعات مفيش فيها حاجة تتبعت،
+  // فبنخرج بدري من غير ما نلمس الداتابيز.
+  if (!inReminderWindow(hour) && due.length === 0) {
+    return NextResponse.json({ ok: true, hour, date: today, idle: true });
+  }
+
   const supabase = await createClient();
 
   const [{ data: subs }, { data: doneToday }, { data: streaks }, { data: prefsRows }, { data: logs }] =
@@ -249,5 +286,80 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, hour, date: today, adminSent, ...stats });
+  // ── تذكير مواعيد الخدمة: كل معاد في وقته بالظبط بتوقيت مصر ──
+  // التسبحة الأحد ٧ م • مسابقة الخميس ٩ م • القداس الجمعة ٧ ص • مدارس الأحد ٢ م
+  const events: { key: string; students: number; admins: number }[] = [];
+
+  for (const ev of due) {
+    // الصف ده قفل: الـunique (event, date) بيمنع إن التذكير يتبعت مرتين
+    const { error: lockErr } = await supabase
+      .from("event_reminder_log")
+      .insert({ event_key: ev.key, on_date: today });
+    if (lockErr) continue;
+
+    const forStudents = JSON.stringify({
+      ...ev.reminder,
+      url: "/hero",
+      tag: `event-${ev.key}`,
+    });
+    const forAdmins = JSON.stringify({
+      title: `${ev.emoji} ${ev.label} — سجّل مين حضر`,
+      body: "افتح الشاشة ودوس على اللي حضروا، والنقط تنزل لهم على طول",
+      url: `/events/${ev.key}`,
+      tag: `event-admin-${ev.key}`,
+    });
+
+    let toStudents = 0;
+    for (const sub of subs ?? []) {
+      const p = prefsOf.get(sub.student_id);
+      if (p && p.reminders_on === false) continue;
+      if (p?.paused_until && p.paused_until >= today) continue;
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          forStudents,
+        );
+        toStudents++;
+      } catch (e) {
+        const code = (e as { statusCode?: number }).statusCode;
+        if (code === 404 || code === 410) {
+          await supabase
+            .from("push_subscriptions")
+            .update({ is_active: false })
+            .eq("id", sub.id);
+        }
+      }
+    }
+
+    const { data: adminRows } = await supabase
+      .from("admin_push")
+      .select("id, endpoint, p256dh, auth")
+      .eq("is_active", true);
+
+    let toAdmins = 0;
+    for (const sub of adminRows ?? []) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          forAdmins,
+        );
+        toAdmins++;
+      } catch (e) {
+        const code = (e as { statusCode?: number }).statusCode;
+        if (code === 404 || code === 410) {
+          await supabase.from("admin_push").update({ is_active: false }).eq("id", sub.id);
+        }
+      }
+    }
+
+    await supabase
+      .from("event_reminder_log")
+      .update({ sent_students: toStudents, sent_admins: toAdmins })
+      .eq("event_key", ev.key)
+      .eq("on_date", today);
+
+    events.push({ key: ev.key, students: toStudents, admins: toAdmins });
+  }
+
+  return NextResponse.json({ ok: true, hour, date: today, adminSent, events, ...stats });
 }

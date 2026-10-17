@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
-import { todayISO } from "@/lib/types";
+import { shiftDate, todayISO, daysBetween } from "@/lib/types";
 
 export type ReminderSlot = "morning" | "night";
 
@@ -8,12 +8,12 @@ export type ReminderSlot = "morning" | "night";
 export const OPEN_HOUR = 19;
 
 /**
- * شباك إرسال التذكير بتوقيت مصر.
- * الكرون على UTC ومصر بتغيّر ساعتها، فبنشغّل جولتين (16:00 و17:00 UTC)
- * وواحدة بس منهم بتلاقي الساعة ٧ بالليل في مصر — صيفي وشتوي.
+ * تذكير المهمات بيتبعت في ساعة الفتح بالظبط بتوقيت مصر — مرة واحدة في اليوم.
+ * الكرون بيشتغل كل ساعة وبيتأكد من ساعة مصر، فالتوقيت الصيفي والشتوي
+ * الاتنين بيوصلوا في نفس اللحظة الصح من غير أي تعديل.
  */
 export function inReminderWindow(hour: number): boolean {
-  return hour >= OPEN_HOUR && hour <= OPEN_HOUR + 2;
+  return hour === OPEN_HOUR;
 }
 
 export type ReminderPrefs = {
@@ -41,18 +41,8 @@ export function cairoHour(now: Date = new Date()): number {
   );
 }
 
-/** تاريخ قبل N يوم من يوم معيّن */
-export function shiftDate(iso: string, days: number): string {
-  const d = new Date(`${iso}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-export function daysBetween(from: string, to: string): number {
-  return Math.round(
-    (Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000,
-  );
-}
+// الدوالّ دي بقت في lib/types عشان الكلاينت يستعملها كمان
+export { shiftDate, daysBetween } from "@/lib/types";
 
 /** ثواني عدّت من نص الليل بتوقيت مصر */
 export function cairoSecondsOfDay(now: Date = new Date()): number {

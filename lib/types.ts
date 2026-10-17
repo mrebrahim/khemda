@@ -84,6 +84,19 @@ export function todayISO(): string {
   }).format(new Date());
 }
 
+/** تاريخ قبل/بعد N يوم من يوم معيّن */
+export function shiftDate(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+export function daysBetween(from: string, to: string): number {
+  return Math.round(
+    (Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000,
+  );
+}
+
 export function formatArabicDate(iso: string): string {
   const d = new Date(iso + "T12:00:00Z");
   return new Intl.DateTimeFormat("ar-EG", {
