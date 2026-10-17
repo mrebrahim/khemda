@@ -85,13 +85,16 @@ export async function heroLogin(
   const supabase = await createClient();
   const { data } = await supabase
     .from("student_accounts")
-    .select("student_id, is_active, students!inner(is_active)")
+    .select("student_id, is_active, is_demo, students!inner(is_active)")
     .eq("login_code", code)
     .maybeSingle();
 
-  // لازم الحساب والمخدوم نفسه يكونوا نشطين — المخدوم اللي اتوقف مايدخلش
+  // لازم الحساب والمخدوم نفسه يكونوا نشطين — المخدوم اللي اتوقف مايدخلش.
+  // الاستثناء الوحيد حساب الديمو: مخدوم موقوف عمدًا عشان ما يظهرش
+  // في الكشوف، بس بيعدّي هنا عشان المشرف يجرّب.
   const student = Array.isArray(data?.students) ? data.students[0] : data?.students;
-  if (!data || !data.is_active || !(student as { is_active?: boolean } | undefined)?.is_active) {
+  const studentActive = (student as { is_active?: boolean } | undefined)?.is_active === true;
+  if (!data || !data.is_active || (!studentActive && !data.is_demo)) {
     return { ok: false, error: "الكود ده مش موجود — اتأكد منه تاني" };
   }
 
