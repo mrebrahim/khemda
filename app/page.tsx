@@ -48,6 +48,12 @@ export default async function HomePage() {
       desc: "كشف نصّي جاهز للنسخ لكل خادم",
     },
     {
+      href: "/visits",
+      emoji: "🚪",
+      title: "الافتقاد بالفصول",
+      desc: "مين ما اتفتقدش — بالعنوان والموقع والاتصال والواتساب",
+    },
+    {
       href: "/daily-post",
       emoji: "🎨",
       title: "بوست النهارده للجروب",
