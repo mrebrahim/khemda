@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { markClass, setPlace, toggleEventMark } from "@/app/events/actions";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { markClass, setBonus, setPlace, toggleEventMark } from "@/app/events/actions";
 import { PLACE_LABEL, PLACE_MEDAL } from "@/lib/events";
 import { normalizeArabic } from "@/lib/types";
 
@@ -21,7 +21,7 @@ export type ClassGroup = {
   students: RecordStudent[];
 };
 
-export type MarkState = { present: boolean; place: number | null };
+export type MarkState = { present: boolean; place: number | null; bonus: boolean };
 
 type Toast = { id: number; text: string; tone: "good" | "bad" };
 
@@ -37,6 +37,8 @@ export default function EventRecorder({
   emoji,
   entryXp,
   placeXp,
+  bonusXp,
+  bonusLabel,
   groups,
   initial,
   readOnly,
@@ -47,11 +49,15 @@ export default function EventRecorder({
   emoji: string;
   entryXp: number;
   placeXp: readonly [number, number, number] | null;
+  bonusXp: number | null;
+  bonusLabel: string | null;
   groups: ClassGroup[];
   initial: Record<number, MarkState>;
   readOnly: boolean;
 }) {
   const [marks, setMarks] = useState<Record<number, MarkState>>(initial);
+  // لما السيرفر يرجّع بيانات جديدة (مسح كود مثلاً) الكشف يتحدّث
+  useEffect(() => setMarks(initial), [initial]);
   const [query, setQuery] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [busy, setBusy] = useState<Set<number>>(new Set());
@@ -71,9 +77,10 @@ export default function EventRecorder({
       if (!m?.present) continue;
       sum += entryXp;
       if (m.place && placeXp) sum += placeXp[m.place - 1];
+      if (m.bonus && bonusXp) sum += bonusXp;
     }
     return sum;
-  }, [allStudents, marks, entryXp, placeXp]);
+  }, [allStudents, marks, entryXp, placeXp, bonusXp]);
 
   const podium = useMemo(() => {
     const byPlace: (RecordStudent | null)[] = [null, null, null];
@@ -114,8 +121,12 @@ export default function EventRecorder({
 
   function toggle(s: RecordStudent) {
     if (readOnly) return;
-    const was = marks[s.id] ?? { present: false, place: null };
-    const next: MarkState = { present: !was.present, place: was.present ? null : was.place };
+    const was = marks[s.id] ?? { present: false, place: null, bonus: false };
+    const next: MarkState = {
+      present: !was.present,
+      place: was.present ? null : was.place,
+      bonus: was.present ? false : was.bonus,
+    };
     setMarks((m) => ({ ...m, [s.id]: next }));
     lock(s.id, true);
 
@@ -137,7 +148,7 @@ export default function EventRecorder({
 
   function choosePlace(s: RecordStudent, place: number) {
     if (readOnly) return;
-    const was = marks[s.id] ?? { present: false, place: null };
+    const was = marks[s.id] ?? { present: false, place: null, bonus: false };
     const same = was.place === place;
     const value = same ? null : place;
 
@@ -149,7 +160,7 @@ export default function EventRecorder({
           if (st.place === value) next[Number(key)] = { ...st, place: null };
         }
       }
-      next[s.id] = { present: true, place: value };
+      next[s.id] = { ...was, present: true, place: value };
       return next;
     });
     lock(s.id, true);
@@ -171,6 +182,30 @@ export default function EventRecorder({
     });
   }
 
+  function toggleBonus(s: RecordStudent) {
+    if (readOnly || bonusXp === null) return;
+    const was = marks[s.id] ?? { present: false, place: null, bonus: false };
+    const value = !was.bonus;
+    setMarks((m) => ({ ...m, [s.id]: { ...was, present: true, bonus: value } }));
+    lock(s.id, true);
+
+    startTransition(async () => {
+      const res = await setBonus(eventKey, date, s.id, value);
+      lock(s.id, false);
+      if (!res.ok) {
+        setMarks((m) => ({ ...m, [s.id]: was }));
+        say(res.error, "bad");
+        return;
+      }
+      say(
+        value
+          ? `⭐ ${first(s.full_name)} ${bonusLabel ?? "بونص"}${res.xp > 0 ? ` +${res.xp}` : ""}`
+          : `شيلنا بونص ${first(s.full_name)}`,
+        value ? "good" : "bad",
+      );
+    });
+  }
+
   function markWholeClass(g: ClassGroup) {
     if (readOnly) return;
     const missing = g.students.filter((s) => !marks[s.id]?.present);
@@ -178,7 +213,7 @@ export default function EventRecorder({
 
     setMarks((m) => {
       const next = { ...m };
-      for (const s of missing) next[s.id] = { present: true, place: null };
+      for (const s of missing) next[s.id] = { present: true, place: null, bonus: false };
       return next;
     });
     for (const s of missing) lock(s.id, true);
@@ -193,7 +228,7 @@ export default function EventRecorder({
       if (!res.ok) {
         setMarks((m) => {
           const next = { ...m };
-          for (const s of missing) next[s.id] = { present: false, place: null };
+          for (const s of missing) next[s.id] = { present: false, place: null, bonus: false };
           return next;
         });
         say(res.error, "bad");
@@ -353,15 +388,19 @@ export default function EventRecorder({
                                   m.place && placeXp
                                     ? ` و${PLACE_MEDAL[m.place - 1]} +${placeXp[m.place - 1]}`
                                     : ""
-                                }`
+                                }${m.bonus && bonusXp ? ` و⭐ +${bonusXp}` : ""}`
                               : `دوس عشان تسجّله — +${entryXp}`}
                           </span>
                         </span>
                       </button>
 
-                      {placeXp && (
-                        <div className="flex shrink-0 gap-1">
-                          {[0, 1, 2].map((i) => (
+                    </div>
+
+                    {/* الميداليات والبونص في سطر لوحدهم عشان الاسم ياخد عرضه كامل */}
+                    {(placeXp || bonusXp !== null) && (
+                      <div className="flex gap-1 mt-1.5 pr-[52px]">
+                        {placeXp &&
+                          [0, 1, 2].map((i) => (
                             <button
                               key={i}
                               type="button"
@@ -369,18 +408,34 @@ export default function EventRecorder({
                               disabled={readOnly}
                               aria-label={`${PLACE_LABEL[i]} لـ${s.full_name}`}
                               aria-pressed={m.place === i + 1}
-                              className={`w-9 h-9 rounded-lg border text-base grid place-content-center transition ${
+                              className={`w-10 h-9 rounded-lg border text-base grid place-content-center transition ${
                                 m.place === i + 1
-                                  ? "bg-amber-400 border-amber-500 scale-105"
-                                  : "bg-white border-slate-200 opacity-50 hover:opacity-100"
+                                  ? "bg-amber-400 border-amber-500"
+                                  : "bg-white border-slate-200 opacity-45 hover:opacity-100"
                               }`}
                             >
                               {PLACE_MEDAL[i]}
                             </button>
                           ))}
-                        </div>
-                      )}
-                    </div>
+
+                        {bonusXp !== null && (
+                          <button
+                            type="button"
+                            onClick={() => toggleBonus(s)}
+                            disabled={readOnly}
+                            aria-label={`${bonusLabel ?? "بونص"} لـ${s.full_name}`}
+                            aria-pressed={m.bonus}
+                            className={`h-9 px-2.5 rounded-lg border text-xs font-bold grid place-content-center transition ${
+                              m.bonus
+                                ? "bg-violet-600 border-violet-700 text-white"
+                                : "bg-white border-slate-200 text-slate-500 opacity-60 hover:opacity-100"
+                            }`}
+                          >
+                            ⭐ {bonusLabel ?? "بونص"}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </li>
                 );
               })}

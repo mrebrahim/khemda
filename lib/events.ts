@@ -23,6 +23,9 @@ export type ChurchEvent = {
   entryRule: string;
   /** قواعد المركز الأول والثاني والتالت — للمسابقات بس */
   placeRules: readonly [string, string, string] | null;
+  /** بونص زيادة (الدرجة النهائية في المسابقة) */
+  bonusRule: string | null;
+  bonusLabel: string | null;
   /** الخانة المقابلة في كشف الحضور عشان التقارير تفضل مظبوطة */
   field: StudentField | null;
   /** يتبعت تذكير في معاده؟ */
@@ -43,6 +46,8 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: null,
     entryRule: "tasbeha",
     placeRules: null,
+    bonusRule: null,
+    bonusLabel: null,
     field: "tasbeha",
     remind: true,
     reminder: {
@@ -61,6 +66,8 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: null,
     entryRule: "quiz_thu_entry",
     placeRules: ["quiz_thu_1st", "quiz_thu_2nd", "quiz_thu_3rd"] as const,
+    bonusRule: "quiz_full",
+    bonusLabel: "الدرجة كاملة",
     field: null,
     remind: true,
     reminder: {
@@ -79,6 +86,8 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: null,
     entryRule: "mass",
     placeRules: null,
+    bonusRule: null,
+    bonusLabel: null,
     field: "mass",
     remind: true,
     reminder: {
@@ -97,6 +106,8 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: "الدور السابع",
     entryRule: "sunday_school",
     placeRules: null,
+    bonusRule: null,
+    bonusLabel: null,
     field: "service",
     remind: true,
     reminder: {
@@ -115,6 +126,8 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: "جوّه الفصل",
     entryRule: "quiz_fri_entry",
     placeRules: ["quiz_fri_1st", "quiz_fri_2nd", "quiz_fri_3rd"] as const,
+    bonusRule: "quiz_full",
+    bonusLabel: "الدرجة كاملة",
     field: null,
     remind: false,
     reminder: null,

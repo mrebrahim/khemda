@@ -3,7 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { eventByKey } from "@/lib/events";
-import { recordEvent, setEventPlace, unrecordEvent } from "@/lib/events-record";
+import {
+  alreadyMarked,
+  recordByToken,
+  recordEvent,
+  setEventBonus,
+  setEventPlace,
+  unrecordEvent,
+  type ScanOutcome,
+} from "@/lib/events-record";
+import { lookupToken, type ScanTarget } from "@/lib/checkin";
 
 async function servant(): Promise<string | null> {
   const supabase = await createClient();
@@ -93,4 +102,55 @@ export async function markClass(
 
   revalidatePath(`/events/${ev.key}`);
   return { ok: true, added, xp };
+}
+
+/** بونص الدرجة النهائية في المسابقة */
+export async function setBonus(
+  eventKey: string,
+  date: string,
+  studentId: number,
+  bonus: boolean,
+): Promise<ToggleResult> {
+  const ev = eventByKey(eventKey);
+  if (!ev) return { ok: false, error: "الحدث ده مش موجود" };
+
+  const by = await servant();
+  if (!by) return { ok: false, error: "لازم تسجّل دخول" };
+
+  const res = await setEventBonus({ ev, date, studentId, bonus, by });
+  if (res.ok) revalidatePath(`/events/${ev.key}`);
+  return res;
+}
+
+/** الخطوة الأولى في المسح: مين ده، ومتسجّل خلاص ولا لأ */
+export async function identifyForEvent(
+  eventKey: string,
+  date: string,
+  token: string,
+): Promise<(ScanTarget & { alreadyHere: boolean }) | null> {
+  const ev = eventByKey(eventKey);
+  if (!ev) return null;
+  if (!(await servant())) return null;
+
+  const target = await lookupToken(token);
+  if (!target) return null;
+
+  return { ...target, alreadyHere: await alreadyMarked(ev, date, target.studentId) };
+}
+
+/** الخطوة التانية: سجّل الحضور بالكود */
+export async function scanForEvent(
+  eventKey: string,
+  date: string,
+  token: string,
+): Promise<ScanOutcome> {
+  const ev = eventByKey(eventKey);
+  if (!ev) return { status: "unknown" };
+
+  const by = await servant();
+  if (!by) return { status: "unknown" };
+
+  const res = await recordByToken({ ev, date, token, by });
+  revalidatePath(`/events/${ev.key}`);
+  return res;
 }

@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { identify, confirmCheckIn } from "@/app/check-in/actions";
+import { identifyForEvent, scanForEvent } from "@/app/events/actions";
 import type { ScanTarget, CheckInResult } from "@/lib/checkin";
+
+/** لو اتبعت، المسح بيسجّل الحدث ده بدل حضور مدارس الأحد */
+export type ScanEvent = { key: string; date: string; label: string };
 
 type Phase = "idle" | "scanning" | "confirming" | "done" | "error";
 
-export default function Scanner() {
+export default function Scanner({ event }: { event?: ScanEvent } = {}) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [target, setTarget] = useState<ScanTarget | null>(null);
   const [result, setResult] = useState<CheckInResult | null>(null);
@@ -14,6 +19,7 @@ export default function Scanner() {
   const [busy, setBusy] = useState(false);
   const [count, setCount] = useState(0);
 
+  const router = useRouter();
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
   const lastToken = useRef<string>("");
 
@@ -49,7 +55,9 @@ export default function Scanner() {
           setPhase("confirming");
 
           try {
-            const found = await identify(decoded);
+            const found = event
+              ? await identifyForEvent(event.key, event.date, decoded)
+              : await identify(decoded);
             if (!found) {
               setError("الكود ده مش معروف — جرّب تاني أو سجّله يدوي");
               setPhase("error");
@@ -81,10 +89,16 @@ export default function Scanner() {
     if (!target || busy) return;
     setBusy(true);
     try {
-      const res = await confirmCheckIn(lastToken.current);
+      const res = event
+        ? await scanForEvent(event.key, event.date, lastToken.current)
+        : await confirmCheckIn(lastToken.current);
       setResult(res);
       setPhase("done");
-      if (res.status === "ok") setCount((c) => c + 1);
+      if (res.status === "ok") {
+        setCount((c) => c + 1);
+        // الكشف اللي تحت يتحدّث على طول بالاسم اللي اتسجّل
+        if (event) router.refresh();
+      }
     } catch {
       setError("مقدرناش نسجّل الحضور");
       setPhase("error");
@@ -102,7 +116,7 @@ export default function Scanner() {
     <div className="space-y-3">
       {count > 0 && (
         <p className="text-center text-sm font-bold text-green-700 bg-green-50 border border-green-300 rounded-xl py-2">
-          ✅ سجّلت {count} النهارده
+          ✅ سجّلت {count} {event ? `في ${event.label}` : "النهارده"}
         </p>
       )}
 
@@ -156,7 +170,7 @@ export default function Scanner() {
 
           {target.alreadyHere ? (
             <p className="mt-4 bg-amber-50 border border-amber-300 rounded-xl py-3 font-bold text-amber-900">
-              إنت حاضر بالفعل يا بطل!
+              {event ? `متسجّل خلاص في ${event.label}` : "إنت حاضر بالفعل يا بطل!"}
             </p>
           ) : (
             <button

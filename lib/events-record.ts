@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { award, reverse } from "@/lib/xp";
+import { award, reverse, getRanks, rankFor, getActiveSeason } from "@/lib/xp";
+import { lookupToken } from "@/lib/checkin";
 import { dowOf, type ChurchEvent } from "@/lib/events";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -241,7 +242,7 @@ export async function unrecordEvent(opts: {
   const supabase = await createClient();
   const { data: mark } = await supabase
     .from("event_marks")
-    .select("id, place")
+    .select("id, place, bonus")
     .eq("student_id", studentId)
     .eq("event_key", ev.key)
     .eq("on_date", date)
@@ -250,6 +251,13 @@ export async function unrecordEvent(opts: {
   const sessionId = ev.field ? await getOrCreateSessionId(date) : null;
   const why = `شيل تسجيل ${ev.label}`;
 
+  if (mark?.bonus && ev.bonusRule) {
+    await reverseLatest(
+      baseKey(ev, date, sessionId, studentId, ev.bonusRule),
+      by,
+      why,
+    );
+  }
   if (mark?.place && ev.placeRules) {
     await reverseLatest(
       baseKey(ev, date, sessionId, studentId, ev.placeRules[mark.place - 1]),
@@ -341,4 +349,140 @@ export async function setEventPlace(opts: {
   });
   if (res.error) return { ok: false, error: res.error };
   return { ok: true, xp: res.xp };
+}
+
+/** بونص الدرجة النهائية — تشغيل وإطفاء */
+export async function setEventBonus(opts: {
+  ev: ChurchEvent;
+  date: string;
+  studentId: number;
+  bonus: boolean;
+  by: string;
+}): Promise<RecordResult> {
+  const { ev, date, studentId, bonus, by } = opts;
+  if (!ev.bonusRule) return { ok: false, error: "الحدث ده مفيهوش بونص" };
+  if (!validDate(ev, date)) return { ok: false, error: "التاريخ مش يوم الحدث" };
+
+  // لازم يكون مسجّل دخول المسابقة الأول
+  const entry = await recordEvent({ ev, date, studentId, by });
+  if (!entry.ok) return entry;
+
+  const supabase = await createClient();
+  const sessionId = ev.field ? await getOrCreateSessionId(date) : null;
+  const base = baseKey(ev, date, sessionId, studentId, ev.bonusRule);
+
+  const { data: mark } = await supabase
+    .from("event_marks")
+    .select("bonus")
+    .eq("student_id", studentId)
+    .eq("event_key", ev.key)
+    .eq("on_date", date)
+    .maybeSingle();
+
+  if (Boolean(mark?.bonus) === bonus) return { ok: true, xp: 0 };
+
+  const { error } = await supabase
+    .from("event_marks")
+    .update({ bonus, updated_at: new Date().toISOString() })
+    .eq("student_id", studentId)
+    .eq("event_key", ev.key)
+    .eq("on_date", date);
+  if (error) return { ok: false, error: error.message };
+
+  if (!bonus) {
+    await reverseLatest(base, by, `شيل ${ev.bonusLabel ?? "البونص"}`);
+    return { ok: true, xp: 0 };
+  }
+
+  const res = await awardOnce({
+    base,
+    studentId,
+    ruleCode: ev.bonusRule,
+    occurredOn: date,
+    note: `${ev.label} — ${ev.bonusLabel ?? "بونص"}`,
+    by,
+  });
+  if (res.error) return { ok: false, error: res.error };
+  return { ok: true, xp: res.xp };
+}
+
+export type ScanOutcome =
+  | { status: "unknown" }
+  | { status: "already"; name: string }
+  | {
+      status: "ok";
+      name: string;
+      xp: number;
+      totalXp: number;
+      rankName: string | null;
+      rankedUp: boolean;
+      toNext: number;
+      nextRank: string | null;
+    };
+
+/** تسجيل بمسح كود الولد — نفس نقط التسجيل بالاسم بالظبط */
+export async function recordByToken(opts: {
+  ev: ChurchEvent;
+  date: string;
+  token: string;
+  by: string;
+}): Promise<ScanOutcome> {
+  const target = await lookupToken(opts.token);
+  if (!target) return { status: "unknown" };
+
+  const supabase = await createClient();
+  const [ranks, season] = await Promise.all([getRanks(), getActiveSeason()]);
+
+  const before = season
+    ? (
+        (
+          await supabase
+            .from("xp_ledger")
+            .select("xp")
+            .eq("student_id", target.studentId)
+            .eq("season_id", season.id)
+        ).data ?? []
+      ).reduce((n, r) => n + r.xp, 0)
+    : 0;
+
+  const res = await recordEvent({
+    ev: opts.ev,
+    date: opts.date,
+    studentId: target.studentId,
+    by: opts.by,
+  });
+  if (!res.ok) return { status: "already", name: target.fullName };
+  if (res.xp === 0) return { status: "already", name: target.fullName };
+
+  const after = before + res.xp;
+  const rankBefore = rankFor(before, ranks).current;
+  const rankAfter = rankFor(after, ranks);
+
+  return {
+    status: "ok",
+    name: target.fullName,
+    xp: res.xp,
+    totalXp: after,
+    rankName: rankAfter.current?.name ?? null,
+    rankedUp: (rankAfter.current?.level ?? 0) > (rankBefore?.level ?? 0),
+    toNext: rankAfter.toNext,
+    nextRank: rankAfter.next?.name ?? null,
+  };
+}
+
+/** الولد ده متسجّل في الحدث ده النهارده؟ */
+export async function alreadyMarked(
+  ev: ChurchEvent,
+  date: string,
+  studentId: number,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("event_marks")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("event_key", ev.key)
+    .eq("on_date", date)
+    .maybeSingle();
+  return Boolean(data);
 }

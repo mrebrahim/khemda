@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import NavBar from "@/components/NavBar";
 import EventCountdown from "@/components/EventCountdown";
+import Scanner from "@/components/Scanner";
 import MigrationNeeded from "@/components/MigrationNeeded";
 import EventRecorder, {
   type ClassGroup,
@@ -57,7 +58,7 @@ export default async function EventRecordPage({
       getClassServants(),
       supabase
         .from("event_marks")
-        .select("student_id, place")
+        .select("student_id, place, bonus")
         .eq("event_key", ev.key)
         .eq("on_date", date),
       getRules(),
@@ -96,7 +97,11 @@ export default async function EventRecordPage({
 
   const initial: Record<number, MarkState> = {};
   for (const m of marks ?? []) {
-    initial[m.student_id] = { present: true, place: m.place ?? null };
+    initial[m.student_id] = {
+      present: true,
+      place: m.place ?? null,
+      bonus: Boolean(m.bonus),
+    };
   }
 
   const xpOf = new Map(rules.map((r) => [r.code, r.xp]));
@@ -109,6 +114,7 @@ export default async function EventRecordPage({
       ] as [number, number, number])
     : null;
 
+  const bonusXp = ev.bonusRule ? (xpOf.get(ev.bonusRule) ?? 0) : null;
   const timing = timingOf(ev, today, cairoSecondsOfDay());
 
   return (
@@ -153,8 +159,19 @@ export default async function EventRecordPage({
             دوس على الولد = حضر و+{entryXp} نقطة تنزل في رصيده فورًا. دوس تاني
             يشيل التسجيل ويرجّع النقط.
             {ev.placeRules && " المراكز بتتحدّد من الميداليات جنب الاسم."}
+            {ev.bonusRule &&
+              ` و⭐ معناها ${ev.bonusLabel} — بونص ${bonusXp} نقطة زيادة.`}
           </p>
         </section>
+
+        <details className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+          <summary className="cursor-pointer px-4 py-3 font-bold text-brand-900">
+            📷 سجّل بمسح كود الولد
+          </summary>
+          <div className="px-4 pb-4">
+            <Scanner event={{ key: ev.key, date, label: ev.label }} />
+          </div>
+        </details>
 
         <EventRecorder
           eventKey={ev.key}
@@ -163,6 +180,8 @@ export default async function EventRecordPage({
           emoji={ev.emoji}
           entryXp={entryXp}
           placeXp={placeXp}
+          bonusXp={bonusXp}
+          bonusLabel={ev.bonusLabel}
           groups={list}
           initial={initial}
           readOnly={false}
