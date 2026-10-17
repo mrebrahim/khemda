@@ -5,10 +5,10 @@ import {
   cairoHour,
   daysBetween,
   DEFAULT_PREFS,
+  inReminderWindow,
   pickReminder,
   shiftDate,
   type ReminderKind,
-  type ReminderSlot,
 } from "@/lib/habits";
 import { todayISO } from "@/lib/types";
 
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /** رسايل مختلفة عشان التنبيه ما يبقاش ممل ولا متوقّع */
-function message(kind: ReminderKind, streak: number, left: number, isMorning: boolean) {
+function message(kind: ReminderKind, streak: number, left: number, justOpened: boolean) {
   if (kind === "last_chance") {
     return streak >= 7
       ? {
@@ -36,7 +36,7 @@ function message(kind: ReminderKind, streak: number, left: number, isMorning: bo
     };
   }
 
-  if (isMorning) {
+  if (justOpened) {
     if (streak >= 7) {
       return {
         title: `🔓 المهمات فتحت — سلسلتك ${streak} يوم!`,
@@ -98,7 +98,7 @@ export async function GET(request: Request) {
         .select("student_id, current_streak, last_active_on"),
       supabase
         .from("reminder_prefs")
-        .select("student_id, reminders_on, slot, daily_goal, paused_until"),
+        .select("student_id, reminders_on, daily_goal, paused_until"),
       supabase
         .from("reminder_log")
         .select("student_id, kind, on_date")
@@ -140,7 +140,6 @@ export async function GET(request: Request) {
       streak,
       idle,
       hour,
-      slot: (p.slot ?? "evening") as ReminderSlot,
       remindersOn: p.reminders_on ?? true,
       pausedUntil: p.paused_until ?? null,
       today,
@@ -158,7 +157,7 @@ export async function GET(request: Request) {
     }
 
     const payload = JSON.stringify({
-      ...message(kind, streak, Math.max(1, goal - done), hour >= 6 && hour <= 9),
+      ...message(kind, streak, Math.max(1, goal - done), inReminderWindow(hour)),
       url: "/hero/daily",
       tag: kind,
     });
@@ -203,9 +202,9 @@ export async function GET(request: Request) {
     }
   }
 
-  // تذكير المشرف ينزّل بوست اليوم على الجروب — في جولة الصبح بس
+  // تذكير المشرف ينزّل بوست اليوم على الجروب — مع فتح المهمات
   let adminSent = 0;
-  if (hour >= 6 && hour <= 9) {
+  if (inReminderWindow(hour)) {
     const { data: adminSubs } = await supabase
       .from("admin_push")
       .select("id, endpoint, p256dh, auth")

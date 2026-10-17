@@ -4,8 +4,17 @@ import { todayISO } from "@/lib/types";
 
 export type ReminderSlot = "morning" | "night";
 
-/** المهمات بتفتح الساعة ٧ الصبح بتوقيت مصر وبتقفل نص الليل */
-export const OPEN_HOUR = 7;
+/** المهمات بتفتح ٧ بالليل بتوقيت مصر وبتقفل نص الليل */
+export const OPEN_HOUR = 19;
+
+/**
+ * شباك إرسال التذكير بتوقيت مصر.
+ * الكرون على UTC ومصر بتغيّر ساعتها، فبنشغّل جولتين (16:00 و17:00 UTC)
+ * وواحدة بس منهم بتلاقي الساعة ٧ بالليل في مصر — صيفي وشتوي.
+ */
+export function inReminderWindow(hour: number): boolean {
+  return hour >= OPEN_HOUR && hour <= OPEN_HOUR + 2;
+}
 
 export type ReminderPrefs = {
   reminders_on: boolean;
@@ -184,7 +193,6 @@ export function pickReminder(input: {
   idle: number;
   /** الساعة بتوقيت مصر */
   hour: number;
-  slot: ReminderSlot;
   remindersOn: boolean;
   pausedUntil: string | null;
   today: string;
@@ -193,31 +201,26 @@ export function pickReminder(input: {
   /** آخر مرة اتبعتله رسالة رجوع */
   lastWinback: string | null;
 }): ReminderKind | null {
-  const { done, goal, streak, idle, hour, slot, today } = input;
+  const { done, goal, streak, idle, hour, today } = input;
 
   if (!input.remindersOn) return null;
   if (input.pausedUntil && input.pausedUntil >= today) return null;
   if (done >= goal) return null;
-
-  const isLate = hour >= 21 || hour <= 1;
+  // التذكير بيتبعت أول ما المهمات تفتح
+  if (!inReminderWindow(hour)) return null;
 
   // غايب من فترة — رسالة رجوع مرة كل أسبوع بالكتير
-  if (idle >= 3 && isLate && !input.sentToday.has("winback")) {
+  if (idle >= 3 && !input.sentToday.has("winback")) {
     if (!input.lastWinback || daysBetween(input.lastWinback, today) >= 7) return "winback";
     return null;
   }
 
-  // سلسلته هتقطع والوقت اتأخر — آخر فرصة
-  if (isLate && streak >= 2 && idle === 1 && !input.sentToday.has("last_chance")) {
+  // سلسلته هتقطع والمهمات لسه فاتحة شوية — آخر فرصة
+  if (streak >= 2 && idle === 1 && !input.sentToday.has("last_chance")) {
     return "last_chance";
   }
 
-  // التذكير العادي في الميعاد اللي اختاره
-  if (!input.sentToday.has("daily")) {
-    // الصبح: أول ما المهمات تفتح. بالليل: قبل ما ينام.
-    const inSlot = slot === "night" ? isLate : hour >= 6 && hour <= 9;
-    if (inSlot) return "daily";
-  }
+  if (!input.sentToday.has("daily")) return "daily";
 
   return null;
 }

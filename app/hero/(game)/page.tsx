@@ -54,7 +54,7 @@ export default async function HeroHome() {
           <p className="text-3xl" aria-hidden="true">
             🔒
           </p>
-          <p className="font-bold text-white mt-1">المهمات بتفتح ٧ الصبح</p>
+          <p className="font-bold text-white mt-1">المهمات بتفتح ٧ بالليل</p>
           <p className="text-xs text-slate-400 mt-1">
             جهّز نفسك — أول ما تفتح تاخد نقطك
           </p>

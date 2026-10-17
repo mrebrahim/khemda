@@ -27,12 +27,12 @@ export async function completeMission(ruleCode: "prayer" | "bible") {
   const hero = await currentHero();
   if (!hero) return { ok: false as const, error: "لازم تسجّل دخول" };
 
-  // المهمات بتفتح ٧ الصبح — قبل كده مش مسموح
+  // المهمات بتفتح ٧ بالليل — قبل كده مش مسموح
   const win = missionWindow();
   if (!win.open) {
     return {
       ok: false as const,
-      error: `المهمات بتفتح الساعة ${OPEN_HOUR} الصبح — استنى شوية`,
+      error: "المهمات بتفتح الساعة ٧ بالليل — استنى شوية",
     };
   }
 

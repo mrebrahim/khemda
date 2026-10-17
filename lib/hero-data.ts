@@ -31,7 +31,7 @@ export type HeroState = {
   prefs: ReminderPrefs;
   /** الساعة بتوقيت مصر — عشان بانر «آخر فرصة» */
   hour: number;
-  /** نافذة المهمات: بتفتح ٧ الصبح وبتقفل نص الليل */
+  /** نافذة المهمات: بتفتح ٧ بالليل وبتقفل نص الليل */
   window: MissionWindow;
 };
 

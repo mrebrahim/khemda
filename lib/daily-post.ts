@@ -59,7 +59,7 @@ export async function buildDailyPost(baseUrl: string): Promise<DailyPost> {
 
   const headline = isFriday
     ? "النهارده الجمعة — يوم الخدمة!"
-    : "المهمات فتحت ☀️";
+    : "المهمات فتحت 🌙";
 
   const hype = isFriday
     ? `احضر الخدمة والقداس وخد لحد +${fridayMax} نقطة في يوم واحد`
@@ -72,7 +72,7 @@ export async function buildDailyPost(baseUrl: string): Promise<DailyPost> {
     "",
     isFriday
       ? `⛪ يوم الجمعة أكبر كنز نقط في الأسبوع: لحد *+${fridayMax} نقطة* (الخدمة + القداس + التناول + التسبحة + تيجي بدري).`
-      : `☀️ مهمات النهارده مفتوحة من ٧ الصبح:\n🙏 الصلاة اليومية (+${prayerXp})\n📖 إصحاح من الكتاب المقدس (+${bibleXp})`,
+      : `🌙 مهمات النهارده فتحت (من ٧ بالليل لحد نص الليل):\n🙏 الصلاة اليومية (+${prayerXp})\n📖 إصحاح من الكتاب المقدس (+${bibleXp})`,
     "",
     top3.length > 0
       ? `🏆 المتصدّرين دلوقتي:\n${top3

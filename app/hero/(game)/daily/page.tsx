@@ -44,7 +44,7 @@ export default async function DailyPage() {
         <div className="b-frame p-3.5 text-center">
           <p className="font-bold text-white">🌙 المهمات لسه مقفولة</p>
           <p className="text-xs text-slate-400 mt-1">
-            بتفتح كل يوم الساعة ٧ الصبح — تعالى بدري وخد نقطك
+            بتفتح كل يوم الساعة ٧ بالليل ولحد نص الليل
           </p>
         </div>
       )}
@@ -69,7 +69,7 @@ export default async function DailyPage() {
         xp={xpOf("prayer")}
         done={prayerDone}
         locked={!win.open}
-        lockReason="بتفتح ٧ الصبح"
+        lockReason="بتفتح ٧ بالليل"
         seconds={prayerTimer.seconds}
         timerLabel={prayerTimer.label}
       />
@@ -84,7 +84,7 @@ export default async function DailyPage() {
         done={bibleDone}
         locked={bibleLocked}
         lockReason={
-          !win.open ? "بتفتح ٧ الصبح" : "تفتح لما تخلّص مهمة الصلاة"
+          !win.open ? "بتفتح ٧ بالليل" : "تفتح لما تخلّص مهمة الصلاة"
         }
         seconds={bibleTimer.seconds}
         timerLabel={bibleTimer.label}

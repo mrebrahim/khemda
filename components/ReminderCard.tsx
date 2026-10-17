@@ -111,7 +111,8 @@ export default function ReminderCard({ prefs }: { prefs: ReminderPrefs }) {
     <section className="b-frame p-4" aria-label="التذكير اليومي">
       <h2 className="sec-title font-bold text-white text-sm mb-1">🔔 فكّرني كل يوم</h2>
       <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
-        تنبيه واحد في الميعاد اللي تختاره، وتنبيه أخير بس لو سلسلتك على وشك تقطع.
+        تنبيه واحد أول ما المهمات تفتح ٧ بالليل، ورسالته بتتغيّر لو سلسلتك
+        على وشك تقطع.
       </p>
 
       {/* تشغيل الإشعارات */}
@@ -148,24 +149,10 @@ export default function ReminderCard({ prefs }: { prefs: ReminderPrefs }) {
       )}
       {error && <p className="text-red-300 text-xs mt-2">{error}</p>}
 
-      {/* الميعاد */}
-      <p className="text-[11px] text-slate-400 mt-4 mb-1.5">نفكّرك إمتى؟</p>
-      <div className="grid grid-cols-2 gap-2">
-        <Choice
-          on={local.slot === "morning"}
-          onClick={() => save({ slot: "morning" })}
-          disabled={pending}
-          label="أول ما تفتح"
-          hint="٧ الصبح"
-        />
-        <Choice
-          on={local.slot === "night"}
-          onClick={() => save({ slot: "night" })}
-          disabled={pending}
-          label="قبل ما أنام"
-          hint="بالليل"
-        />
-      </div>
+      <p className="text-[11px] text-slate-400 mt-4 leading-relaxed">
+        التنبيه بيوصل الساعة <b className="text-amber-300">٧ بالليل</b> بتوقيت
+        القاهرة — أول ما المهمات تفتح، صيفي وشتوي.
+      </p>
 
       {/* الهدف اليومي */}
       <p className="text-[11px] text-slate-400 mt-3 mb-1.5">هدفك اليومي؟</p>
