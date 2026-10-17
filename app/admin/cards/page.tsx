@@ -3,9 +3,10 @@ import PrintButton from "@/components/PrintButton";
 import { createClient } from "@/lib/supabase/server";
 import { qrDataUrl } from "@/lib/qr";
 import { getBaseUrl } from "@/lib/site";
-import { STAGES, AREAS } from "@/lib/types";
+import { STAGES, AREAS, normalizeArabic } from "@/lib/types";
 import { studentsWithoutCode } from "@/lib/student-code";
 import MissingCodesCard from "@/components/MissingCodesCard";
+import CardsSearch from "@/components/CardsSearch";
 
 export const dynamic = "force-dynamic";
 
@@ -163,6 +164,8 @@ export default async function CardsPage({
             ))}
           </div>
 
+          <CardsSearch total={raw.length} />
+
           <div className="mt-3 flex flex-wrap gap-2 items-center">
             <PrintButton />
             <p className="text-xs text-slate-500">
@@ -178,7 +181,7 @@ export default async function CardsPage({
         )}
 
         {groups.map((g) => (
-          <section key={g.key} className="class-page mb-6">
+          <section key={g.key} data-class-page className="class-page mb-6">
             <header className="class-head flex items-baseline justify-between gap-2 border-b-2 border-slate-800 pb-1.5 mb-3">
               <div>
                 <h3 className="font-bold text-lg text-slate-900">
@@ -203,6 +206,7 @@ export default async function CardsPage({
               {g.cards.map((c) => (
                 <article
                   key={c.student_id}
+                  data-card-name={normalizeArabic(c.full_name)}
                   className="hero-card bg-white border-2 border-dashed border-slate-300 rounded-xl p-3 text-center break-inside-avoid"
                 >
                   <p className="text-[9px] tracking-[0.2em] text-amber-600 font-bold">

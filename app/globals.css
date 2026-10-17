@@ -500,3 +500,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .mission-live { animation: none; }
 }
+
+/* البحث في صفحة الكروت: اللي متخفي مايتطبعش */
+.card-hidden { display: none !important; }
+
+@media print {
+  /* آخر فصل ظاهر مايطلعش بعده ورقة فاضية */
+  .class-page.break-last {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
