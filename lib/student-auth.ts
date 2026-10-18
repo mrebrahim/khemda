@@ -2,6 +2,7 @@ import "server-only";
 import { createHmac, timingSafeEqual, randomInt } from "node:crypto";
 import { cookies } from "next/headers";
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
+import { todayISO } from "@/lib/types";
 
 const COOKIE = "hero_session";
 const MAX_AGE = 60 * 60 * 24 * 120; // ٤ شهور
@@ -111,6 +112,11 @@ export async function heroLogin(
     .from("student_accounts")
     .update({ last_login_at: new Date().toISOString() })
     .eq("student_id", data.student_id);
+
+  // سجل الدخول باليوم — القيد الفريد بيخلّيه صف واحد لكل يوم
+  await supabase
+    .from("student_logins")
+    .insert({ student_id: data.student_id, on_date: todayISO() });
 
   return { ok: true };
 }

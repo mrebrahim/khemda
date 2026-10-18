@@ -72,6 +72,12 @@ export default async function HomePage() {
       desc: "كل فصل لوحده: حضر كام • قداس • تناول • خدمة • تسبحة",
     },
     {
+      href: "/reports/missions",
+      emoji: "🗒️",
+      title: "تقرير المهمات اليومية",
+      desc: "كل ولد: دخل ولا لأ، وعمل مهمة الصلاة والإصحاح ولا لأ",
+    },
+    {
       href: "/nudge",
       emoji: "🔔",
       title: "تذكير الأبطال",
