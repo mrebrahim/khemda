@@ -4,6 +4,9 @@ import MissionCard from "@/components/MissionCard";
 import { GFX } from "@/lib/assets";
 import WeekStrip from "@/components/WeekStrip";
 import ReminderCard from "@/components/ReminderCard";
+import GameMissionCard from "@/components/GameMissionCard";
+import { gameFor, nextGame } from "@/lib/games";
+import { todayISO } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +16,15 @@ export default async function DailyPage() {
 
   const { rules, doneToday, streak, atRisk, week, prefs, window: win } = state;
   const xpOf = (code: string) => rules.find((r) => r.code === code)?.xp ?? 0;
-  const bothDone = doneToday.size >= prefs.daily_goal;
 
   const prayerDone = doneToday.has("prayer");
   const bibleDone = doneToday.has("bible");
+  const gameDone = doneToday.has("game");
+
+  const today = todayISO();
+  const game = gameFor(today);
+  const tomorrow = nextGame(today).game;
+  const gameLocked = !gameDone && (!win.open || !prayerDone || !bibleDone);
 
   // كل مهمة ليها حالة: مقفولة / مفتوحة / خلصت — والعدّاد بيتغيّر معاها
   function timerFor(done: boolean, locked: boolean) {
@@ -32,6 +40,8 @@ export default async function DailyPage() {
   const prayerTimer = timerFor(prayerDone, !win.open);
   const bibleLocked = !win.open || !prayerDone;
   const bibleTimer = timerFor(bibleDone, bibleLocked);
+  const gameTimer = timerFor(gameDone, gameLocked);
+  const allDone = prayerDone && bibleDone && gameDone;
 
   return (
     <div className="space-y-3">
@@ -49,7 +59,7 @@ export default async function DailyPage() {
         </div>
       )}
 
-      {atRisk && !bothDone && (
+      {atRisk && !allDone && (
         <div className="g-card g-glow-bronze p-3.5 text-center">
           <p className="font-bold text-amber-300">
             🔥 سلسلتك {streak.current_streak} يوم — متسبهاش تقطع!
@@ -90,9 +100,26 @@ export default async function DailyPage() {
         timerLabel={bibleTimer.label}
       />
 
-      {bothDone && (
+      <GameMissionCard
+        title={`${game.emoji} ${game.title} — ${game.howTo}`}
+        emoji={game.emoji}
+        xp={xpOf("game")}
+        done={gameDone}
+        locked={gameLocked}
+        lockReason={
+          !win.open ? "بيفتح ٧ بالليل" : "يفتح لما تخلّص الصلاة والإصحاح"
+        }
+        seconds={gameTimer.seconds}
+        timerLabel={gameTimer.label}
+      />
+
+      {allDone ? (
         <p className="text-center text-emerald-400 font-bold py-3">
           ✨ خلّصت مهمات النهارده! نشوفك بكره 🔥
+        </p>
+      ) : (
+        <p className="text-center text-[11px] text-slate-500 py-1">
+          تحدي بكرة: {tomorrow.emoji} {tomorrow.title}
         </p>
       )}
 
