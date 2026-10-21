@@ -60,7 +60,7 @@ export default function MyCard({
         <span className="flex items-center gap-1.5">
           <Image src={GFX.xpGold} alt="" width={96} height={96} aria-hidden="true" className="w-6 h-6 object-contain" />
           <span className="font-bold text-amber-400 tabular-nums text-lg">
-            {me.verified_xp} <span className="text-[11px] text-slate-400 font-normal">نقطة</span>
+            {me.total_xp} <span className="text-[11px] text-slate-400 font-normal">نقطة</span>
           </span>
         </span>
       </div>
@@ -78,6 +78,15 @@ export default function MyCard({
         ) : (
           "وصلت لأعلى مستوى في الموسم 👑"
         )}
+      </p>
+
+      <p className="text-[10px] text-slate-500 mt-1">
+        {me.verified_xp > 0 && me.verified_xp < me.total_xp ? (
+          <>
+            منها <b className="text-emerald-400">{me.verified_xp}</b> من الكنيسة
+            والخدمة، والباقي من مهماتك اليومية
+          </>
+        ) : null}
       </p>
 
       <p className="text-[13px] text-amber-200 font-bold mt-2.5 leading-snug">

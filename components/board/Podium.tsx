@@ -91,7 +91,7 @@ export default function Podium({
             first ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
           }`}
         >
-          {person.verified_xp}
+          {person.total_xp}
         </span>
         <span className="text-[10px] font-bold text-slate-900/80 mt-1">
           نقطة · {s.label}

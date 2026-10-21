@@ -53,13 +53,13 @@ export default async function HeroesPage({
           </p>
           <div className="grid grid-cols-3 gap-2 mt-4 text-center">
             <Stat label="أبطال" value={active.length} />
-            <Stat label="أعلى نقاط" value={active[0]?.verified_xp ?? 0} />
+            <Stat label="أعلى نقاط" value={active[0]?.total_xp ?? 0} />
             <Stat
               label="متوسط"
               value={
                 active.length
                   ? Math.round(
-                      active.reduce((s, x) => s + x.verified_xp, 0) / active.length,
+                      active.reduce((s, x) => s + x.total_xp, 0) / active.length,
                     )
                   : 0
               }
@@ -114,7 +114,7 @@ export default async function HeroesPage({
 
                   <div className="text-left shrink-0">
                     <p className="font-bold text-lg text-brand-800 tabular-nums">
-                      {s.verified_xp}
+                      {s.total_xp}
                     </p>
                     <p className="text-[11px] text-slate-400">XP موثقة</p>
                   </div>

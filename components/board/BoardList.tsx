@@ -158,7 +158,7 @@ export default function BoardList({
                   />
                   <span className="text-left w-12">
                     <span className="block font-bold text-lg text-amber-400 tabular-nums leading-none">
-                      {s.verified_xp}
+                      {s.total_xp}
                     </span>
                     <span className="block text-[10px] text-slate-400 mt-0.5">نقطة</span>
                   </span>

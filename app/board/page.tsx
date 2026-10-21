@@ -40,8 +40,10 @@ export default async function BoardPage({
       .select(
         "id, display_name, area, stage, verified_xp, total_xp, rank_name, rank_tier, rank_level",
       )
-      .order("verified_xp", { ascending: false })
-      .order("total_xp", { ascending: false }),
+      // الترتيب بالليفل الأول وبعدين النقط — زي ما بيظهر للولد بالظبط
+      .order("rank_level", { ascending: false })
+      .order("total_xp", { ascending: false })
+      .order("display_name", { ascending: true }),
     supabase.from("board_ranks").select("level, name, tier, xp_required"),
     currentHero(),
   ]);
@@ -68,7 +70,7 @@ export default async function BoardPage({
   const [first, second, third] = ranked;
   const me = ranked.find((r) => r.isMe) ?? null;
   const gapAbove =
-    me && me.place > 1 ? ranked[me.place - 2].verified_xp - me.verified_xp : null;
+    me && me.place > 1 ? ranked[me.place - 2].total_xp - me.total_xp : null;
 
   return (
     <main className="arena min-h-screen text-white pb-14">

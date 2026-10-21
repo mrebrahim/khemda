@@ -222,5 +222,6 @@ export async function getLeaderboard(): Promise<StudentXp[]> {
         verified_xp: t?.verified ?? 0,
       };
     })
-    .sort((a, b) => b.verified_xp - a.verified_xp || b.total_xp - a.total_xp);
+    // ترتيب واحد في كل السيستم: إجمالي النقط (والليفل بيتحسب منه)
+    .sort((a, b) => b.total_xp - a.total_xp || a.full_name.localeCompare(b.full_name, "ar"));
 }

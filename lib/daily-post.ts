@@ -33,8 +33,8 @@ export async function buildDailyPost(baseUrl: string): Promise<DailyPost> {
       getRules(),
       supabase
         .from("board_leaderboard")
-        .select("display_name, verified_xp")
-        .order("verified_xp", { ascending: false })
+        .select("display_name, total_xp")
+        .order("total_xp", { ascending: false })
         .limit(3),
       admin.from("daily_missions").select("student_id").eq("on_date", date),
       supabase
@@ -54,7 +54,7 @@ export async function buildDailyPost(baseUrl: string): Promise<DailyPost> {
 
   const top3 = (board ?? []).map((b) => ({
     name: b.display_name as string,
-    xp: b.verified_xp as number,
+    xp: b.total_xp as number,
   }));
 
   const headline = isFriday
