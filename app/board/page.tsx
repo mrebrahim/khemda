@@ -15,6 +15,7 @@ import MyCard from "@/components/board/MyCard";
 import Podium from "@/components/board/Podium";
 import Prizes from "@/components/board/Prizes";
 import Sparks from "@/components/board/Sparks";
+import MusicToggle from "@/components/MusicToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +94,9 @@ export default async function BoardPage({
               <p className="arena-ribbon inline-block px-5 py-1 mt-2 text-sm font-bold text-amber-200">
                 {season?.name ?? "الموسم"}
               </p>
+              <div className="mt-3">
+                <MusicToggle />
+              </div>
             </div>
 
             <p className="arena-banner hidden sm:block self-center px-3 py-2 text-[11px] font-bold text-cyan-200 leading-snug max-w-[150px]">

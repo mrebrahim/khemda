@@ -9,6 +9,7 @@ import { award, getRanks, getActiveSeason, rankFor } from "@/lib/xp";
 import { todayISO } from "@/lib/types";
 import { missionWindow, OPEN_HOUR, savePrefs, shiftDate } from "@/lib/habits";
 import { gameFor } from "@/lib/games";
+import { inviteState, settleFor, submitInvite as submitInviteCore } from "@/lib/referral";
 import { checkAnswer } from "@/lib/games/build";
 
 export async function loginAction(_prev: unknown, formData: FormData) {
@@ -77,6 +78,9 @@ async function recordDaily(studentId: number, ruleCode: string, today: string) {
   });
 
   const streak = await touchStreak(studentId, today);
+
+  // أول مهمة للولد الجديد بتعتمد دعوة اللي علّمه وتنزّله نقطه
+  await settleFor(studentId);
 
   // مكافأة السلسلة بتتضاف جوه touchStreak، فبنعيد الحساب بعدها
   const after = season ? await totalXp() : before + res.xp;
@@ -245,4 +249,23 @@ export async function saveReminderPrefs(patch: {
   await savePrefs(hero.studentId, clean as Parameters<typeof savePrefs>[1]);
   revalidatePath("/hero", "layout");
   return { ok: true as const };
+}
+
+/** الولد الجديد بيكتب كود اللي علّمه اللعبة */
+export async function submitInvite(code: string) {
+  const hero = await currentHero();
+  if (!hero) return { ok: false as const, error: "لازم تسجّل دخول" };
+
+  const res = await submitInviteCore(hero.studentId, String(code ?? "").slice(0, 12));
+  if (!res.ok) return { ok: false as const, error: res.error };
+
+  revalidatePath("/hero", "layout");
+  return { ok: true as const, inviterName: res.inviterName };
+}
+
+/** حالة الدعوة للولد الحالي */
+export async function myInviteState() {
+  const hero = await currentHero();
+  if (!hero) return null;
+  return inviteState(hero.studentId);
 }

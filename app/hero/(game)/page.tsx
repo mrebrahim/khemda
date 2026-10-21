@@ -5,6 +5,9 @@ import WeekStrip from "@/components/WeekStrip";
 import MissionTimer from "@/components/MissionTimer";
 import { PRIZE } from "@/lib/prizes";
 import { GFX } from "@/lib/assets";
+import InviteCard from "@/components/InviteCard";
+import { inviteState } from "@/lib/referral";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +16,17 @@ export default async function HeroHome() {
   if (!state) return null;
 
   const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour, window: win } = state;
+
+  // كارت الدعوة: كود الولد نفسه + هل ينفع يكتب كود حد
+  const supabase = await createAdminClient();
+  const [{ data: myAccount }, invite] = await Promise.all([
+    supabase
+      .from("student_accounts")
+      .select("login_code")
+      .eq("student_id", state.hero.studentId)
+      .maybeSingle(),
+    inviteState(state.hero.studentId),
+  ]);
   const level = rank.current?.level ?? 1;
   const nextPrize = ranks
     .filter((r) => PRIZE[r.level] && r.level > level)
@@ -222,6 +236,13 @@ export default async function HeroHome() {
           </p>
         )}
       </section>
+
+      <InviteCard
+        myCode={myAccount?.login_code ?? null}
+        state={invite.state}
+        inviterName={invite.state === "done" ? invite.inviterName : null}
+        xp={xpOf("referral")}
+      />
 
       {/* الترتيب */}
       <Link

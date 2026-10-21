@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import CountUp from "@/components/CountUp";
 import SoundToggle from "@/components/SoundToggle";
+import MusicToggle from "@/components/MusicToggle";
 import TutorialButton from "@/components/TutorialButton";
 import HeroAvatar from "@/components/board/HeroAvatar";
 import { logoutAction } from "@/app/hero/actions";
@@ -48,6 +49,7 @@ export default function HeroHeader({ state }: { state: HeroState }) {
 
           <div className="flex items-center gap-1 shrink-0 [&_button]:px-2 [&_button]:py-1 [&_a]:px-2 [&_a]:py-1">
             <TutorialButton />
+            <MusicToggle compact />
             <SoundToggle />
             <Link
               href="/hero/card"

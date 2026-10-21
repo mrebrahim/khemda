@@ -102,6 +102,12 @@ export default async function HomePage() {
       desc: "الأولاد اللي وصلوا لمستوى وطلبوا هديتهم",
     },
     {
+      href: "/admin/referrals",
+      emoji: "🤝",
+      title: "دعوات الأصحاب",
+      desc: "مين علّم مين اللعبة — والنقط بتنزل لما الجديد يبدأ",
+    },
+    {
       href: "/admin/cards",
       emoji: "🎫",
       title: "كروت الأبطال",
