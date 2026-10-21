@@ -14,8 +14,13 @@ import { checkAnswer } from "@/lib/games/build";
 export async function loginAction(_prev: unknown, formData: FormData) {
   const res = await heroLogin(String(formData.get("code") ?? ""));
   if (!res.ok) return { error: res.error ?? "مش عارفين ندخّلك" };
+
+  // بيرجّعه للصفحة اللي كان رايحها (صندوق الحظ مثلاً) — مسارات داخلية بس
+  const next = String(formData.get("next") ?? "");
+  const safe = next.startsWith("/") && !next.startsWith("//") ? next : "/hero";
+
   revalidatePath("/hero", "layout");
-  redirect("/hero");
+  redirect(safe);
 }
 
 export async function logoutAction() {

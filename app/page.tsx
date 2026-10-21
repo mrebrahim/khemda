@@ -90,6 +90,12 @@ export default async function HomePage() {
       desc: "امسح كود الولد والنقط تدخل فورًا",
     },
     {
+      href: "/lucky",
+      emoji: "🎁",
+      title: "صندوق الحظ",
+      desc: "حدث الجمعة: الولد يمسح الكود ويفتح صندوق وياخد مكافأة",
+    },
+    {
       href: "/admin/claims",
       emoji: "🎁",
       title: "طلبات الجوايز",
