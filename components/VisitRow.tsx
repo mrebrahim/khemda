@@ -2,7 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { toggleVisit } from "@/app/visits/actions";
-import { mapsLink, telLink, visitMessage, waLink, type Phone } from "@/lib/visits";
+import {
+  isEgyptMobile,
+  mapsLink,
+  telLink,
+  visitMessage,
+  waLink,
+  type Phone,
+} from "@/lib/visits";
 
 export type VisitStudent = {
   id: number;
@@ -66,7 +73,9 @@ export default function VisitRow({
   const [pending, startTransition] = useTransition();
 
   const firstName = student.full_name.split(" ")[0];
-  const wa = waLink(student.phones[0]?.number ?? null, visitMessage(firstName));
+  // الواتساب بيروح لأول رقم سليم — مش لأول رقم مكتوب
+  const firstGood = student.phones.find((p) => isEgyptMobile(p.number));
+  const wa = waLink(firstGood?.number ?? null, visitMessage(firstName));
   const map = mapsLink(student.address, student.area);
 
   function toggle() {
@@ -151,7 +160,19 @@ export default function VisitRow({
 
             {student.phones.map((p) => {
               const tel = telLink(p.number);
-              if (!tel) return null;
+              // رقم ناقص مش هيرنّ — بنوريه عشان الخادم يصلّحه
+              if (!tel || !isEgyptMobile(p.number)) {
+                return (
+                  <a
+                    key={p.number}
+                    href={`/students/${student.id}/edit`}
+                    className="text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 px-3 py-2 rounded-lg"
+                    title="الرقم ناقص — دوس عشان تصلّحه"
+                  >
+                    ⚠️ {p.label} ناقص
+                  </a>
+                );
+              }
               return (
                 <a
                   key={p.number}

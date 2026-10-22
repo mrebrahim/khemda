@@ -52,17 +52,29 @@ export function visitMessage(firstName: string): string {
 export type Phone = { label: string; number: string };
 
 /**
+ * الموبايل المصري: 01 وبعدها 0 أو 1 أو 2 أو 5، وبعدها ٨ أرقام.
+ * (010 فودافون • 011 اتصالات • 012 أورنج • 015 وي)
+ * الـ20 في الأول اختيارية — بعض الأرقام متسجّلة بكود الدولة.
+ */
+const EG_MOBILE = /(?:20|2)?01[0125]\d{8}/g;
+
+export function isEgyptMobile(digits: string): boolean {
+  return new RegExp(`^${EG_MOBILE.source}$`).test(digits);
+}
+
+/**
  * بعض الأرقام متسجّلة ملزوقة في بعض («0127...01222...»).
- * الدالة دي بتفصلهم لأرقام مصرية سليمة.
+ * الدالة دي بتفصلهم لأرقام مصرية سليمة. ولو الرقم مش موبايل
+ * مصري (أرضي مثلاً) بنسيبه زي ما هو بدل ما نضيّعه.
  */
 export function splitPhones(raw: string | null | undefined): string[] {
   if (!raw) return [];
   const digits = raw.replace(/\D/g, "");
   if (!digits) return [];
 
-  const found = digits.match(/(?:2)?01\d{9}/g);
+  const found = digits.match(EG_MOBILE);
   if (found && found.length > 0) return [...new Set(found)];
-  return digits.length >= 8 ? [digits] : [];
+  return digits.length >= 7 ? [digits] : [];
 }
 
 /** كل أرقام الولد بترتيب الأولوية ومعاها صاحب الرقم */
