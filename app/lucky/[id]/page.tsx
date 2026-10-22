@@ -136,7 +136,7 @@ export default async function LuckyEventPage({
               </form>
             </div>
             <p className="text-[11px] text-slate-500 text-center leading-relaxed">
-              اعرض الكود على موبايلك أو على شاشة. الكود بيتغيّر كل نص دقيقة،
+              اعرض الكود على موبايلك أو على شاشة. الكود بيتغيّر كل دقيقة،
               وتجديده بيبطّل أي كود اتصوّر قبل كده.
             </p>
           </section>

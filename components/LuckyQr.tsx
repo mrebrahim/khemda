@@ -5,7 +5,7 @@ import Image from "next/image";
 import { currentQr, type QrFrame } from "@/app/lucky/actions";
 
 /**
- * الكود بيتغيّر كل ٣٠ ثانية. بنجيب كود جديد من السيرفر أول ما
+ * الكود بيتغيّر كل دقيقة. بنجيب كود جديد من السيرفر أول ما
  * الحالي يخلص، فاللي يصوّر الشاشة الكود بتاعه بيبوظ بسرعة.
  */
 export default function LuckyQr({ eventId }: { eventId: number }) {
@@ -79,7 +79,7 @@ export default function LuckyQr({ eventId }: { eventId: number }) {
         <div className="h-2 bg-slate-200 overflow-hidden rounded-full">
           <div
             className="h-full bg-brand-600 transition-all duration-1000 ease-linear"
-            style={{ width: `${(left / 30) * 100}%` }}
+            style={{ width: `${(left / Math.max(1, frame?.window ?? 60)) * 100}%` }}
           />
         </div>
         <p className="text-xs text-slate-500 mt-1.5 tabular-nums">

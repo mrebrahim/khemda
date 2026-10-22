@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getEvent, makeQrToken, secondsLeftInWindow } from "@/lib/lucky";
+import { getEvent, makeQrToken, secondsLeftInWindow, QR_SECONDS } from "@/lib/lucky";
 import { getBaseUrl } from "@/lib/site";
 import { qrDataUrl } from "@/lib/qr";
 
@@ -136,9 +136,10 @@ export async function rotateQr(eventId: number) {
   return { ok: true as const };
 }
 
-export type QrFrame = { image: string; seconds: number } | null;
+/** `window` = مدة الكود كلها بالثواني، عشان الشريط يرسم صح */
+export type QrFrame = { image: string; seconds: number; window: number } | null;
 
-/** الكود الحالي كصورة — الواجهة بتطلبه كل نص دقيقة */
+/** الكود الحالي كصورة — الواجهة بتطلبه كل دقيقة */
 export async function currentQr(eventId: number): Promise<QrFrame> {
   if (!(await servant())) return null;
 
@@ -149,8 +150,8 @@ export async function currentQr(eventId: number): Promise<QrFrame> {
   if (!token) return null;
 
   const base = await getBaseUrl();
-  const image = await qrDataUrl(`${base}/hero/drop?t=${encodeURIComponent(token)}`, 420);
-  return { image, seconds: secondsLeftInWindow() };
+  const image = await qrDataUrl(`${base}/hero/drop/scan?t=${encodeURIComponent(token)}`, 420);
+  return { image, seconds: secondsLeftInWindow(), window: QR_SECONDS };
 }
 
 export async function addPrize(eventId: number, formData: FormData) {

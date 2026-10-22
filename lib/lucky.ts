@@ -48,8 +48,14 @@ export type LuckyAttempt = {
   created_at: string;
 };
 
-/** الكود بيتغيّر كل ٣٠ ثانية */
-export const QR_SECONDS = 30;
+/** الكود بيتغيّر كل دقيقة */
+export const QR_SECONDS = 60;
+
+/**
+ * سماح بسيط بعد ما الكود يتغيّر، عشان الولد اللي مسح في آخر
+ * ثانية ما يتظلمش. أكبر عمر للكود = دقيقة وعشر ثواني.
+ */
+const GRACE_SECONDS = 10;
 
 function secret(): string | null {
   const v = process.env.STUDENT_SESSION_SECRET;
@@ -84,8 +90,8 @@ export type TokenCheck =
   | { ok: false; reason: "bad" | "expired" | "not-configured" };
 
 /**
- * بنقبل الشباك الحالي واللي قبله، عشان الولد اللي مسح في آخر ثانية
- * ما يتظلمش. يعني الكود عمره ٦٠ ثانية بالكتير.
+ * بنقبل الكود الحالي، والقديم في أول عشر ثواني بس بعد التغيير —
+ * عشان صورة الشاشة ما تفضلش شغّالة دقيقتين.
  */
 export function readQrToken(
   token: string,
@@ -106,7 +112,9 @@ export function readQrToken(
   }
 
   const current = windowNow(now);
-  if (win !== current && win !== current - 1) return { ok: false, reason: "expired" };
+  const intoWindow = Math.floor((now / 1000) % QR_SECONDS);
+  const fresh = win === current || (win === current - 1 && intoWindow < GRACE_SECONDS);
+  if (!fresh) return { ok: false, reason: "expired" };
 
   const liveEpoch = epochOf(eventId);
   if (liveEpoch === null || liveEpoch !== epoch) return { ok: false, reason: "expired" };

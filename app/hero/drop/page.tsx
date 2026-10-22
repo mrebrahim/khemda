@@ -3,15 +3,11 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import LuckyBox from "@/components/LuckyBox";
 import { currentHero } from "@/lib/student-auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 import {
   checkEligibility,
   getEvent,
-  makePass,
   readPass,
-  readQrToken,
   PASS_COOKIE,
-  PASS_SECONDS,
   type LuckyAttempt,
 } from "@/lib/lucky";
 
@@ -20,53 +16,37 @@ export const dynamic = "force-dynamic";
 export default async function DropPage({
   searchParams,
 }: {
-  searchParams: Promise<{ t?: string }>;
+  searchParams: Promise<{ t?: string; e?: string }>;
 }) {
-  const { t } = await searchParams;
+  const { t, e } = await searchParams;
+
+  // كود جاي على الصفحة على طول (كود قديم معروض على شاشة) —
+  // بنوديه للمسح عشان هو اللي بيكتب التصريح
+  if (t) redirect(`/hero/drop/scan?t=${encodeURIComponent(t)}`);
+
   const jar = await cookies();
 
   // ١) مين الولد
   const hero = await currentHero();
-  if (!hero) {
-    const next = t ? `/hero/drop?t=${encodeURIComponent(t)}` : "/hero/drop";
-    redirect(`/hero/login?next=${encodeURIComponent(next)}`);
-  }
+  // التصريح اتكتب في الكوكي قبل ما يوصل هنا، فبعد الدخول
+  // بيرجع يلاقي الصندوق مفتوح
+  if (!hero) redirect(`/hero/login?next=${encodeURIComponent("/hero/drop")}`);
 
-  // ٢) الكود: يا إما جاي من المسح دلوقتي، يا إما تصريح لسه صالح
-  let eventId = readPass(jar.get(PASS_COOKIE)?.value);
+  // ٢) التصريح اللي كتبه المسح — هو إثبات إنه مسح الكود فعلاً
+  const eventId = readPass(jar.get(PASS_COOKIE)?.value);
 
-  if (t) {
-    const supabase = await createAdminClient();
-    const { data: events } = await supabase.from("lucky_events").select("id, qr_epoch");
-    const epochOf = (id: number) =>
-      (events ?? []).find((e) => e.id === id)?.qr_epoch ?? null;
-
-    const check = readQrToken(t, epochOf);
-    if (check.ok) {
-      eventId = check.eventId;
-      const pass = makePass(eventId);
-      if (pass) {
-        jar.set(PASS_COOKIE, pass, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: PASS_SECONDS,
-          path: "/hero",
-        });
-      }
-    } else if (!eventId) {
-      return (
-        <Shell>
-          <p className="text-5xl mb-3">⌛</p>
-          <p className="font-bold text-white">
-            {check.reason === "expired" ? "الكود خلصت صلاحيته" : "الكود ده مش مظبوط"}
-          </p>
-          <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-            الكود بيتغيّر كل نص دقيقة — امسحه تاني من عند الخادم.
-          </p>
-        </Shell>
-      );
-    }
+  if (!eventId && e) {
+    return (
+      <Shell>
+        <p className="text-5xl mb-3">⌛</p>
+        <p className="font-bold text-white">
+          {e === "expired" ? "الكود خلصت صلاحيته" : "الكود ده مش مظبوط"}
+        </p>
+        <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+          الكود بيتغيّر كل دقيقة — امسحه تاني من عند الخادم.
+        </p>
+      </Shell>
+    );
   }
 
   if (!eventId) {
