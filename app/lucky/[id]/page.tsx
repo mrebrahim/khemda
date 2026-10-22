@@ -7,8 +7,10 @@ import { oddsOf, type LuckyPrize } from "@/lib/lucky";
 import {
   addPrize,
   cancelClaimForm,
+  confirmHomeMissionForm,
   deleteEventForm,
   deliverClaimForm,
+  rejectHomeMissionForm,
   removePrizeForm,
   rotateQrForm,
   setStatusForm,
@@ -32,8 +34,14 @@ export default async function LuckyEventPage({
   if (!Number.isInteger(eventId)) notFound();
 
   const supabase = await createClient();
-  const [{ data: event }, { data: prizeRows }, { data: attempts }, { data: claims }, { data: logs }] =
-    await Promise.all([
+  const [
+    { data: event },
+    { data: prizeRows },
+    { data: attempts },
+    { data: claims },
+    { data: homeMissions },
+    { data: logs },
+  ] = await Promise.all([
       supabase
         .from("lucky_events")
         .select("id, title, status, require_attendance, min_level, max_attempts, qr_epoch")
@@ -53,6 +61,12 @@ export default async function LuckyEventPage({
       supabase
         .from("lucky_claims")
         .select("id, label, taayo, status, delivered_by, delivered_at, students(full_name)")
+        .eq("event_id", eventId)
+        .order("status")
+        .order("id", { ascending: false }),
+      supabase
+        .from("lucky_home_missions")
+        .select("id, mission_label, bonus_xp, status, decided_by, created_at, students(full_name)")
         .eq("event_id", eventId)
         .order("status")
         .order("id", { ascending: false }),
@@ -246,6 +260,68 @@ export default async function LuckyEventPage({
               ضيف
             </button>
           </form>
+        </section>
+
+        {/* ── مهمات البيت: نسأل والديه قبل ما البونص ينزل ── */}
+        <section className="bg-white rounded-2xl border border-slate-200 p-4">
+          <h3 className="font-bold text-slate-800 text-sm">مهمات البيت 🏠</h3>
+          <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+            اسأل والدي الولد الأول. البونص مابينزلش غير لما تدوس «اتأكدت».
+          </p>
+          {(homeMissions ?? []).length === 0 ? (
+            <p className="text-sm text-slate-400 mt-2">لسه محدش اختار مهمة.</p>
+          ) : (
+            <ul className="mt-2">
+              {(homeMissions ?? []).map((m) => (
+                <li
+                  key={m.id}
+                  className="flex items-center gap-2 py-2.5 border-b border-slate-100 last:border-0"
+                >
+                  <span className="grow min-w-0">
+                    <span className="font-bold text-slate-800 block truncate">
+                      {nameOf(m)}
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      {m.mission_label} • بونص {m.bonus_xp}
+                      {m.decided_by ? ` • ${m.decided_by}` : ""}
+                    </span>
+                  </span>
+
+                  {m.status === "pending" ? (
+                    <>
+                      <form action={confirmHomeMissionForm.bind(null, m.id)}>
+                        <button
+                          type="submit"
+                          className="shrink-0 rounded-lg bg-emerald-600 text-white text-xs font-bold px-3 py-2"
+                        >
+                          ✅ اتأكدت
+                        </button>
+                      </form>
+                      <form action={rejectHomeMissionForm.bind(null, m.id)}>
+                        <button
+                          type="submit"
+                          aria-label="ماعملهاش"
+                          className="shrink-0 w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-red-600"
+                        >
+                          ✕
+                        </button>
+                      </form>
+                    </>
+                  ) : (
+                    <span
+                      className={`shrink-0 text-[11px] font-bold rounded-full px-2 py-1 border ${
+                        m.status === "confirmed"
+                          ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                          : "text-slate-500 bg-slate-50 border-slate-200"
+                      }`}
+                    >
+                      {m.status === "confirmed" ? "اتأكدت ✓" : "ماعملهاش"}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         {/* ── التسليم ── */}

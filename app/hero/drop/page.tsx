@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import LuckyBox from "@/components/LuckyBox";
+import DropFlow from "@/components/DropFlow";
+import { missionOffer } from "./actions";
+import { pickQuestion } from "@/lib/lucky-missions";
 import { currentHero } from "@/lib/student-auth";
 import {
   checkEligibility,
@@ -78,9 +80,11 @@ export default async function DropPage({
     return (
       <Shell>
         {prev ? (
-          <LuckyBox
+          <DropFlow
             title={event.title}
             left={0}
+            firstQuestion={null}
+            offer={await missionOffer()}
             previous={{
               label: prev.prize_label ?? "مكافأة",
               kind: prev.prize_kind ?? "xp",
@@ -106,7 +110,12 @@ export default async function DropPage({
 
   return (
     <Shell wide>
-      <LuckyBox title={event.title} left={eligible.left} previous={null} />
+      <DropFlow
+        title={event.title}
+        left={eligible.left}
+        previous={null}
+        firstQuestion={pickQuestion()}
+      />
     </Shell>
   );
 }

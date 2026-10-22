@@ -356,3 +356,49 @@ export function readPass(value: string | undefined, now = Date.now()): number | 
 
   return eventId;
 }
+
+/* ── تصريح التحدي ───────────────────────────────────────── */
+
+/** التصريح بيعيش ٥ دقايق — قد ما الولد محتاج يفتح الصندوق */
+const SOLVED_SECONDS = 5 * 60;
+
+/**
+ * إثبات إن الولد جاوب على التحدي صح. موقّع على السيرفر وباسم
+ * الولد نفسه، فمينفعش يتنقل لولد تاني ولا يتعمل من المتصفح.
+ */
+export function makeSolved(studentId: number, now = Date.now()): string | null {
+  const key = secret();
+  if (!key) return null;
+  const exp = Math.floor(now / 1000) + SOLVED_SECONDS;
+  const sig = createHmac("sha256", key)
+    .update(`solved:${studentId}:${exp}`)
+    .digest("base64url")
+    .slice(0, 24);
+  return `${studentId}.${exp}.${sig}`;
+}
+
+export function readSolved(
+  value: string | undefined | null,
+  studentId: number,
+  now = Date.now(),
+): boolean {
+  const key = secret();
+  if (!key || !value) return false;
+
+  const parts = value.split(".");
+  if (parts.length !== 3) return false;
+
+  const who = Number(parts[0]);
+  const exp = Number(parts[1]);
+  if (!Number.isInteger(who) || !Number.isInteger(exp)) return false;
+  if (who !== studentId) return false;
+  if (Math.floor(now / 1000) > exp) return false;
+
+  const want = createHmac("sha256", key)
+    .update(`solved:${who}:${exp}`)
+    .digest("base64url")
+    .slice(0, 24);
+  const a = Buffer.from(want);
+  const b = Buffer.from(parts[2]);
+  return a.length === b.length && timingSafeEqual(a, b);
+}

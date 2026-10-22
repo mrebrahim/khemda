@@ -12,11 +12,16 @@ export default function LuckyBox({
   title,
   left,
   previous,
+  solved,
+  onOpened,
 }: {
   title: string;
   left: number;
   /** لو فتح قبل كده بنوريه نفس النتيجة */
   previous: { label: string; kind: string; xp: number; taayo: number } | null;
+  /** تصريح التحدي — من غيره السيرفر مش هيفتح */
+  solved: string;
+  onOpened?: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>(previous ? "done" : "ready");
   const [prize, setPrize] = useState(previous);
@@ -36,7 +41,7 @@ export default function LuckyBox({
 
     // الأنيميشن بيمشي مع الطلب، مش قبله — عشان النتيجة تكون مضمونة
     const [res] = await Promise.all([
-      openDrop(idem.current),
+      openDrop(idem.current, solved),
       new Promise((r) => setTimeout(r, 2200)),
     ]);
 
@@ -48,6 +53,7 @@ export default function LuckyBox({
     setPrize({ label: res.label, kind: res.kind, xp: res.xp, taayo: res.taayo });
     setPhase("done");
     playPoint();
+    onOpened?.();
   }
 
   if (phase === "done" && prize) {

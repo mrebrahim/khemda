@@ -7,6 +7,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getEvent, makeQrToken, secondsLeftInWindow, QR_SECONDS } from "@/lib/lucky";
 import { getBaseUrl } from "@/lib/site";
 import { qrDataUrl } from "@/lib/qr";
+import { award } from "@/lib/xp";
+import { todayISO } from "@/lib/types";
 
 async function servant(): Promise<string | null> {
   const supabase = await createClient();
@@ -102,6 +104,9 @@ export async function setStatus(eventId: number, status: string) {
       .maybeSingle();
     patch.qr_epoch = (data?.qr_epoch ?? 1) + 1;
     patch.starts_at = new Date().toISOString();
+    // مهم: لو الحدث كان خلص قبل كده، ends_at القديم لازم يتشال —
+    // غير كده الحدث يبقى «شغّال» والولد يلاقي «الحدث خلص»
+    patch.ends_at = null;
   }
   if (status === "ended") patch.ends_at = new Date().toISOString();
 
@@ -280,4 +285,82 @@ export async function cancelClaimForm(claimId: number, reason: string, _fd: Form
 export async function deleteEventForm(eventId: number, _fd: FormData) {
   const res = await deleteEvent(eventId);
   if (res.ok) redirect("/lucky");
+}
+
+/* ── مهمات البيت: الخادم بيتأكد من والدي الولد ──────────── */
+
+/**
+ * تأكيد المهمة ونزول البونص.
+ *
+ * البونص مابينزلش قبل كده أبدًا — ده اللي بيخلّي المهمة
+ * حقيقية بدل ما الولد يقول «عملتها» وخلاص.
+ */
+export async function confirmHomeMission(missionId: number) {
+  const by = await servant();
+  if (!by) return { ok: false as const, error: "لازم تسجّل دخول" };
+
+  const supabase = await createAdminClient();
+  const { data: row } = await supabase
+    .from("lucky_home_missions")
+    .select("id, event_id, student_id, mission_label, bonus_xp, status")
+    .eq("id", missionId)
+    .maybeSingle();
+
+  if (!row) return { ok: false as const, error: "المهمة دي مش موجودة" };
+  if (row.status === "confirmed") return { ok: true as const };
+
+  const res = await award({
+    studentId: row.student_id,
+    ruleCode: "home_mission",
+    source: "teacher",
+    dedupeKey: `home:${row.id}`,
+    occurredOn: todayISO(),
+    xpOverride: row.bonus_xp,
+    note: `مهمة البيت — ${row.mission_label}`,
+    createdBy: by,
+  });
+  if (!res.awarded && res.reason) {
+    return { ok: false as const, error: res.reason };
+  }
+
+  await supabase
+    .from("lucky_home_missions")
+    .update({ status: "confirmed", decided_by: by, decided_at: new Date().toISOString() })
+    .eq("id", missionId);
+
+  await log(row.event_id, by, "home_mission:confirm", { missionId, xp: row.bonus_xp });
+  revalidatePath(`/lucky/${row.event_id}`);
+  revalidatePath("/hero", "layout");
+  return { ok: true as const };
+}
+
+/** والديه قالوا إنها ماتعملتش — مفيش بونص، ومفيش عقاب كمان */
+export async function rejectHomeMission(missionId: number) {
+  const by = await servant();
+  if (!by) return { ok: false as const, error: "لازم تسجّل دخول" };
+
+  const supabase = await createAdminClient();
+  const { data: row } = await supabase
+    .from("lucky_home_missions")
+    .select("id, event_id, status")
+    .eq("id", missionId)
+    .maybeSingle();
+  if (!row) return { ok: false as const, error: "المهمة دي مش موجودة" };
+
+  await supabase
+    .from("lucky_home_missions")
+    .update({ status: "rejected", decided_by: by, decided_at: new Date().toISOString() })
+    .eq("id", missionId);
+
+  await log(row.event_id, by, "home_mission:reject", { missionId });
+  revalidatePath(`/lucky/${row.event_id}`);
+  return { ok: true as const };
+}
+
+export async function confirmHomeMissionForm(missionId: number, _fd: FormData) {
+  await confirmHomeMission(missionId);
+}
+
+export async function rejectHomeMissionForm(missionId: number, _fd: FormData) {
+  await rejectHomeMission(missionId);
 }
