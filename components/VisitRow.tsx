@@ -2,15 +2,20 @@
 
 import { useState, useTransition } from "react";
 import { toggleVisit } from "@/app/visits/actions";
-import { mapsLink, telLink, visitMessage, waLink } from "@/lib/visits";
+import { mapsLink, telLink, visitMessage, waLink, type Phone } from "@/lib/visits";
 
 export type VisitStudent = {
   id: number;
   full_name: string;
   address: string | null;
-  phone: string | null;
-  father_phone: string | null;
   area: string | null;
+  stage?: string | null;
+  /** كل أرقام الولد وأهله */
+  phones: Phone[];
+  /** من تحليل العنوان */
+  house?: number | null;
+  floor?: number | null;
+  landmark?: string | null;
   /** افتقدته الأسبوع ده؟ */
   visitedThisWeek: boolean;
   /** آخر افتقاد (تاريخ أول الأسبوع) أو null لو عمره ما اتفتقد */
@@ -48,15 +53,20 @@ function Since({ weeksAgo }: { weeksAgo: number | null }) {
   );
 }
 
-export default function VisitRow({ student }: { student: VisitStudent }) {
+export default function VisitRow({
+  student,
+  showClass = false,
+}: {
+  student: VisitStudent;
+  /** يوريك المرحلة والمنطقة — في الافتقاد المجمع */
+  showClass?: boolean;
+}) {
   const [checked, setChecked] = useState(student.visitedThisWeek);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const phone = student.phone ?? student.father_phone;
   const firstName = student.full_name.split(" ")[0];
-  const wa = waLink(phone, visitMessage(firstName));
-  const tel = telLink(phone);
+  const wa = waLink(student.phones[0]?.number ?? null, visitMessage(firstName));
   const map = mapsLink(student.address, student.area);
 
   function toggle() {
@@ -95,15 +105,27 @@ export default function VisitRow({ student }: { student: VisitStudent }) {
 
         <div className="grow min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
+            {student.house !== null && student.house !== undefined && (
+              <span className="shrink-0 bg-slate-900 text-white text-[11px] font-bold rounded-lg px-2 py-0.5 tabular-nums">
+                بيت {student.house}
+              </span>
+            )}
             <p className="font-bold text-slate-800">{student.full_name}</p>
             <Since weeksAgo={checked ? 0 : student.weeksAgo} />
           </div>
 
-          {student.address ? (
-            <p className="text-sm text-slate-600 mt-1 leading-relaxed">
-              📍 {student.address}
-            </p>
-          ) : (
+          <p className="text-[11px] text-slate-500 mt-1">
+            {showClass && student.stage && (
+              <span className="font-bold text-slate-600">
+                {student.stage} {student.area} •{" "}
+              </span>
+            )}
+            {student.floor ? `الدور ${student.floor}` : ""}
+            {student.floor && student.landmark ? " • " : ""}
+            {student.landmark}
+          </p>
+
+          {!student.address && (
             <p className="text-sm text-slate-400 mt-1">
               📍 العنوان مش مسجّل —{" "}
               <a
@@ -126,14 +148,21 @@ export default function VisitRow({ student }: { student: VisitStudent }) {
                 📍 جوجل مابس
               </a>
             )}
-            {tel && (
-              <a
-                href={tel}
-                className="text-xs font-bold bg-slate-800 text-white px-3 py-2 rounded-lg hover:bg-slate-900 transition"
-              >
-                📞 اتصال
-              </a>
-            )}
+
+            {student.phones.map((p) => {
+              const tel = telLink(p.number);
+              if (!tel) return null;
+              return (
+                <a
+                  key={p.number}
+                  href={tel}
+                  className="text-xs font-bold bg-slate-800 text-white px-3 py-2 rounded-lg hover:bg-slate-900 transition"
+                >
+                  📞 {p.label}
+                </a>
+              );
+            })}
+
             {wa && (
               <a
                 href={wa}
@@ -144,10 +173,9 @@ export default function VisitRow({ student }: { student: VisitStudent }) {
                 💬 واتساب
               </a>
             )}
-            {!phone && (
-              <span className="text-xs text-slate-400 px-1 py-2">
-                مفيش رقم تليفون
-              </span>
+
+            {student.phones.length === 0 && (
+              <span className="text-xs text-slate-400 px-1 py-2">مفيش رقم تليفون</span>
             )}
           </div>
 

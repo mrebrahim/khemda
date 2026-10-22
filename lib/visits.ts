@@ -44,7 +44,49 @@ export function mapsLink(address: string | null, area: string | null): string | 
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
-/** رسالة واتساب جاهزة للافتقاد */
+/** رسالة واتساب جاهزة — بتتبعت باسم الولد الأول */
 export function visitMessage(firstName: string): string {
-  return `سلام ونعمة يا ${firstName} 👋\nوحشتنا في الخدمة — عاملين إيه؟\nممكن نعدّي عليك الأسبوع ده؟`;
+  return `ازيك ${firstName} 👋\nكنت حابب أشوفك يوم الجمعة الساعة ٢ م في مدارس الأحد في الدور السابع\nهستناك 🙌`;
+}
+
+export type Phone = { label: string; number: string };
+
+/**
+ * بعض الأرقام متسجّلة ملزوقة في بعض («0127...01222...»).
+ * الدالة دي بتفصلهم لأرقام مصرية سليمة.
+ */
+export function splitPhones(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return [];
+
+  const found = digits.match(/(?:2)?01\d{9}/g);
+  if (found && found.length > 0) return [...new Set(found)];
+  return digits.length >= 8 ? [digits] : [];
+}
+
+/** كل أرقام الولد بترتيب الأولوية ومعاها صاحب الرقم */
+export function phonesOf(student: {
+  phone?: string | null;
+  father_phone?: string | null;
+  mother_phone?: string | null;
+}): Phone[] {
+  const out: Phone[] = [];
+  const seen = new Set<string>();
+  const add = (label: string, raw: string | null | undefined) => {
+    const list = splitPhones(raw).filter((n) => {
+      const key = n.replace(/^2/, "");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    // الرقم الواحد بيفضل باسمه، واللي أكتر من رقم بياخد ترقيم
+    list.forEach((n, i) => {
+      out.push({ label: list.length > 1 ? `${label} ${i + 1}` : label, number: n });
+    });
+  };
+  add("الولد", student.phone);
+  add("بابا", student.father_phone);
+  add("ماما", student.mother_phone);
+  return out;
 }

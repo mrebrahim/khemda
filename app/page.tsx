@@ -60,6 +60,12 @@ export default async function HomePage() {
       desc: "مين ما اتفتقدش — بالعنوان والموقع والاتصال والواتساب",
     },
     {
+      href: "/visits/streets",
+      emoji: "🏘️",
+      title: "الافتقاد المجمع بالشوارع",
+      desc: "كل المراحل مع بعض — شارع شارع وبترتيب البيوت",
+    },
+    {
       href: "/daily-post",
       emoji: "🎨",
       title: "بوست النهارده للجروب",

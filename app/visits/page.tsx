@@ -3,7 +3,8 @@ import NavBar from "@/components/NavBar";
 import VisitRow, { type VisitStudent } from "@/components/VisitRow";
 import { createClient } from "@/lib/supabase/server";
 import { areaRank, getClassServants, stageRank } from "@/lib/reports";
-import { weeksBetween, weekStartOf } from "@/lib/visits";
+import { phonesOf, weeksBetween, weekStartOf } from "@/lib/visits";
+import { byHouse, parseAddress, streetKeyOf } from "@/lib/address";
 import { STAGES, AREAS, todayISO } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export default async function VisitsPage({
     await Promise.all([
       supabase
         .from("students")
-        .select("id, full_name, address, phone, father_phone, class_id")
+        .select("id, full_name, address, phone, father_phone, mother_phone, class_id")
         .eq("is_active", true)
         .order("full_name"),
       supabase.from("student_visits").select("student_id, week_start"),
@@ -67,13 +68,17 @@ export default async function VisitsPage({
     if (!last) neverVisited++;
     if (done) visitedThisWeek++;
 
+    const parsed = parseAddress(st.address);
     const row: VisitStudent = {
       id: st.id,
       full_name: st.full_name,
       address: st.address,
-      phone: st.phone,
-      father_phone: st.father_phone,
       area: cls.area,
+      stage: cls.stage,
+      phones: phonesOf(st),
+      house: parsed.house,
+      floor: parsed.floor,
+      landmark: parsed.landmark,
       visitedThisWeek: done,
       lastVisit: last,
       weeksAgo: last ? weeksBetween(last, week) : null,
@@ -95,13 +100,19 @@ export default async function VisitsPage({
   const list = [...groups.values()]
     .map((g) => ({
       ...g,
+      // اللي لسه ما اتفتقدش الأول، وبعدين بالشارع ورقم البيت
+      // عشان الخادم يمشي الشارع كله مرة واحدة
       students: g.students.sort((a, b) => {
         const av = a.visitedThisWeek ? 1 : 0;
         const bv = b.visitedThisWeek ? 1 : 0;
         if (av !== bv) return av - bv;
-        const aw = a.weeksAgo ?? 9999;
-        const bw = b.weeksAgo ?? 9999;
-        if (aw !== bw) return bw - aw;
+
+        const as = streetKeyOf(parseAddress(a.address).street) ?? "ي";
+        const bs = streetKeyOf(parseAddress(b.address).street) ?? "ي";
+        if (as !== bs) return as.localeCompare(bs, "ar");
+
+        const house = byHouse(a, b);
+        if (house !== 0) return house;
         return a.full_name.localeCompare(b.full_name, "ar");
       }),
     }))
@@ -205,6 +216,10 @@ export default async function VisitsPage({
         <p className="text-center text-xs text-slate-500">
           الأسبوع بيبدأ السبت وبينتهي الجمعة — العلامات بتترجع فاضية كل سبت.
           <br />
+          <Link href="/visits/streets" className="text-brand-700 font-bold hover:underline">
+            🏘️ الافتقاد المجمع بالشوارع
+          </Link>
+          {" • "}
           <Link href="/visitation" className="text-brand-700 font-bold hover:underline">
             افتقاد الخدام الشهري
           </Link>
