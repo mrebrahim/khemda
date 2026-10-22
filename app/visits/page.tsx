@@ -4,7 +4,7 @@ import VisitRow, { type VisitStudent } from "@/components/VisitRow";
 import StreetFilter, { type StreetOption } from "@/components/StreetFilter";
 import { createClient } from "@/lib/supabase/server";
 import { areaRank, getClassServants, stageRank } from "@/lib/reports";
-import { phonesOf, weeksBetween, weekStartOf } from "@/lib/visits";
+import { weeksBetween, weekStartOf } from "@/lib/visits";
 import { byHouse, parseAddress, streetKeyOf } from "@/lib/address";
 import { STAGES, AREAS, todayISO } from "@/lib/types";
 
@@ -86,10 +86,10 @@ export default async function VisitsPage({
       address: st.address,
       area: cls.area,
       stage: cls.stage,
-      phones: phonesOf(st),
+      phone: st.phone,
+      father_phone: st.father_phone,
+      mother_phone: st.mother_phone,
       house: parsed.house,
-      floor: parsed.floor,
-      landmark: parsed.landmark,
       visitedThisWeek: done,
       lastVisit: last,
       weeksAgo: last ? weeksBetween(last, week) : null,

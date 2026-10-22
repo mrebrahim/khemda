@@ -3,7 +3,7 @@ import NavBar from "@/components/NavBar";
 import VisitRow, { type VisitStudent } from "@/components/VisitRow";
 import StreetFilter, { type StreetOption } from "@/components/StreetFilter";
 import { createClient } from "@/lib/supabase/server";
-import { phonesOf, weeksBetween, weekStartOf } from "@/lib/visits";
+import { weeksBetween, weekStartOf } from "@/lib/visits";
 import { byHouse, clusterKey, parseAddress } from "@/lib/address";
 import { AREAS, todayISO } from "@/lib/types";
 
@@ -75,10 +75,10 @@ export default async function StreetsPage({
       address: st.address,
       area: cls.area,
       stage: cls.stage,
-      phones: phonesOf(st),
+      phone: st.phone,
+      father_phone: st.father_phone,
+      mother_phone: st.mother_phone,
       house: p.house,
-      floor: p.floor,
-      landmark: p.landmark,
       visitedThisWeek: visited,
       lastVisit: last,
       weeksAgo: last ? weeksBetween(last, week) : null,

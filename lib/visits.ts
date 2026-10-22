@@ -1,3 +1,4 @@
+import { parseAddress } from "@/lib/address";
 import { todayISO } from "@/lib/types";
 
 /** أول يوم في الأسبوع (السبت) — الجمعة آخر يوم فيه */
@@ -33,13 +34,37 @@ export function telLink(phone: string | null): string | null {
 }
 
 /**
- * لينك جوجل ماپس. مفيش إحداثيات مسجّلة، فبنبعت العنوان كما هو
- * مع اسم المنطقة عشان البحث يقرب أكتر.
+ * المدينة اللي فيها كل العناوين. بتتزوّد على البحث عشان جوجل
+ * ماپس ما يوديناش لشارع بنفس الاسم في محافظة تانية.
+ */
+export const CITY = "شبرا الخيمة";
+
+/**
+ * نص البحث اللي بيروح لجوجل ماپس.
+ *
+ * العنوان المكتوب فيه حاجات بتلخبط البحث — «بجوار صيدلية ممدوح»
+ * و«يتم التواصل عبر التليفون» و«الدور الخامس». فبنحلّل العنوان
+ * وناخد اللي ماپس بيفهمه بس: رقم البيت، الشارع، الشارع الكبير
+ * اللي متفرّع منه، المنطقة، والمدينة.
+ */
+export function mapsQuery(address: string | null, area: string | null): string | null {
+  if (!address || address.trim() === "") return null;
+
+  const p = parseAddress(address);
+  const parts = p.street
+    ? [p.house !== null ? String(p.house) : "", p.street, p.parent ?? "", area, CITY]
+    : [address, area, CITY];
+
+  const q = parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  return q || null;
+}
+
+/**
+ * لينك جوجل ماپس. مفيش إحداثيات مسجّلة، فبنبعت العنوان كبحث.
+ * بياخد العنوان كـنص، فأول ما الخادم يعدّله اللينك يتحدّث لوحده.
  */
 export function mapsLink(address: string | null, area: string | null): string | null {
-  // من غير عنوان مكتوب، اسم المنطقة لوحده مش هيوصّل لحد — فمفيش لينك
-  if (!address || address.trim() === "") return null;
-  const q = [address, area].filter(Boolean).join(" ").trim();
+  const q = mapsQuery(address, area);
   if (!q) return null;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
@@ -101,4 +126,25 @@ export function phonesOf(student: {
   add("بابا", student.father_phone);
   add("ماما", student.mother_phone);
   return out;
+}
+
+/**
+ * بتنضّف الرقم اللي الخادم كتبه: بتشيل المسافات والشُرط وكود
+ * الدولة، وبترجّع الأرقام المصرية السليمة مفصولة بمسافة.
+ *
+ * لو مفيش ولا رقم مصري سليم بنسيب اللي كتبه زي ما هو — يمكن
+ * يكون أرضي أو رقم ناقص عايز يفضل مكتوب لحد ما يتصلّح.
+ */
+export function cleanPhoneInput(raw: string | null | undefined): string {
+  const text = String(raw ?? "").trim();
+  if (!text) return "";
+
+  const digits = text.replace(/\D/g, "");
+  const found = digits.match(EG_MOBILE);
+  if (found && found.length > 0) {
+    // الماتش ممكن يجي بكود الدولة («2» أو «20») قبل الـ«01»
+    const fixed = [...new Set(found.map((n) => n.replace(/^(?:20|2)(?=01[0125])/, "")))];
+    return fixed.join(" ");
+  }
+  return text.replace(/\s+/g, " ");
 }
