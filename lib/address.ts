@@ -40,6 +40,7 @@ export function normalize(input: string): string {
     .replace(/ؤ/g, "و")
     .replace(/ئ/g, "ي")
     .replace(/[–—]/g, "-")
+    .replace(/-/g, " - ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -96,6 +97,13 @@ const STOP = new Set([
   "عزبه",
   "منشيه",
   "حي",
+  "الموازي",
+  "موازي",
+  "مدينه",
+  "ترعه",
+  "بارك",
+  "شريفه",
+  "الشريفه",
 ]);
 
 /**
@@ -138,12 +146,21 @@ function streetAt(words: string[], i: number): { name: string; next: number } | 
   return { name: `${kind} ${picked.join(" ")}`, next: i + 1 + picked.length };
 }
 
+/**
+ * مفتاح التجميع. الشارع الواحد بيتكتب بأشكال كتير —
+ * «ابو طالب» و«ابوطالب»، «محمد عبد اللطيف» و«محمد عبداللطيف» —
+ * فبنشيل المسافات ونوحّد «عبد ال» و«ابو ال» عشان كلهم يدّوا مفتاح واحد.
+ */
 export function streetKeyOf(name: string | null): string | null {
   if (!name) return null;
-  return normalize(name)
+  const key = normalize(name)
     .replace(/^(شارع|حاره|ش)\s+/, "")
     .replace(/^ال/, "")
+    .replace(/\s+/g, "")
+    .replace(/عبدال/g, "عبد")
+    .replace(/ابوال/g, "ابو")
     .trim();
+  return key || null;
 }
 
 export function parseAddress(raw: string | null | undefined): ParsedAddress {

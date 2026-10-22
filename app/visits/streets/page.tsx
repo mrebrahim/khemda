@@ -89,8 +89,12 @@ export default async function StreetsPage({
       continue;
     }
 
-    const g: Group = groups.get(p.streetKey) ?? {
-      key: p.streetKey,
+    // الشارع المسمّى بيبقى هو هو في أي منطقة، أما الشوارع المرقّمة
+    // («ش ٢٣») فكل منطقة ليها واحد مختلف تمامًا — فبنفصلهم.
+    const gk = /^\d+$/.test(p.streetKey) ? `${cls.area}|${p.streetKey}` : p.streetKey;
+
+    const g: Group = groups.get(gk) ?? {
+      key: gk,
       street: p.street ?? "—",
       parent: p.parent,
       parentKey: p.parentKey,
@@ -103,7 +107,7 @@ export default async function StreetsPage({
     }
     g.areas.add(cls.area);
     g.students.push(row);
-    groups.set(p.streetKey, g);
+    groups.set(gk, g);
   }
 
   // الشارع الكبير وكل المتفرّع منه ورا بعض، عشان الخادم يمشي خط واحد
