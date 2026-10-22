@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { toggleVisit } from "@/app/visits/actions";
+import { saveAddress, toggleVisit } from "@/app/visits/actions";
 import {
   isEgyptMobile,
   mapsLink,
@@ -72,11 +72,31 @@ export default function VisitRow({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  // كتابة العنوان من هنا على طول من غير ما يسيب الصفحة
+  const [address, setAddress] = useState(student.address ?? "");
+  const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState(false);
+
   const firstName = student.full_name.split(" ")[0];
   // الواتساب بيروح لأول رقم سليم — مش لأول رقم مكتوب
   const firstGood = student.phones.find((p) => isEgyptMobile(p.number));
   const wa = waLink(firstGood?.number ?? null, visitMessage(firstName));
-  const map = mapsLink(student.address, student.area);
+  const map = mapsLink(address || null, student.area);
+
+  function save() {
+    setError(null);
+    startTransition(async () => {
+      const res = await saveAddress(student.id, address);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setAddress(res.address);
+      setEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    });
+  }
 
   function toggle() {
     const next = !checked;
@@ -134,16 +154,53 @@ export default function VisitRow({
             {student.landmark}
           </p>
 
-          {!student.address && (
-            <p className="text-sm text-slate-400 mt-1">
-              📍 العنوان مش مسجّل —{" "}
-              <a
-                href={`/students/${student.id}/edit`}
-                className="text-brand-700 font-bold hover:underline"
+          {/* العنوان: يتكتب ويتعدّل من هنا */}
+          {editing ? (
+            <div className="mt-2 flex gap-1.5">
+              <input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                autoFocus
+                maxLength={200}
+                placeholder="زي: ١٨٢ ش الطابونة د٢"
+                className="grow rounded-lg border border-slate-300 px-2.5 py-2 text-sm focus:border-brand-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={save}
+                disabled={pending}
+                className="shrink-0 rounded-lg bg-brand-600 text-white text-xs font-bold px-3 disabled:opacity-50"
               >
-                ضيفه
-              </a>
-            </p>
+                احفظ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAddress(student.address ?? "");
+                  setEditing(false);
+                }}
+                className="shrink-0 rounded-lg border border-slate-300 text-slate-500 text-xs font-bold px-3"
+              >
+                إلغاء
+              </button>
+            </div>
+          ) : address ? (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="block text-right text-sm text-slate-600 mt-1 hover:text-brand-700"
+            >
+              📍 {address} <span className="text-[11px] text-slate-400">✏️</span>
+              {saved && <span className="text-[11px] text-emerald-600 font-bold"> اتحفظ ✓</span>}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="block text-right text-sm text-amber-700 font-bold mt-1"
+            >
+              📍 العنوان مش مسجّل — اكتبه
+            </button>
           )}
 
           <div className="flex flex-wrap gap-1.5 mt-2">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import VisitRow, { type VisitStudent } from "@/components/VisitRow";
+import StreetFilter, { type StreetOption } from "@/components/StreetFilter";
 import { createClient } from "@/lib/supabase/server";
 import { phonesOf, weeksBetween, weekStartOf } from "@/lib/visits";
 import { byHouse, clusterKey, parseAddress } from "@/lib/address";
@@ -20,9 +21,9 @@ type Group = {
 export default async function StreetsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ area?: string; only?: string }>;
+  searchParams: Promise<{ area?: string; only?: string; street?: string }>;
 }) {
-  const { area, only } = await searchParams;
+  const { area, only, street } = await searchParams;
   const pendingOnly = only === "1";
 
   const today = todayISO();
@@ -106,7 +107,7 @@ export default async function StreetsPage({
   }
 
   // الشارع الكبير وكل المتفرّع منه ورا بعض، عشان الخادم يمشي خط واحد
-  const list = [...groups.values()]
+  const all = [...groups.values()]
     .map((g) => ({ ...g, students: [...g.students].sort(byHouse) }))
     .sort((a, b) => {
       const ck = clusterKey(a).localeCompare(clusterKey(b), "ar");
@@ -114,15 +115,28 @@ export default async function StreetsPage({
       return b.students.length - a.students.length;
     });
 
-  const href = (next: { area?: string; only?: string }) => {
+  const list = street ? all.filter((g) => g.key === street) : all;
+
+  const href = (next: { area?: string; only?: string; street?: string }) => {
     const p = new URLSearchParams();
     const a = next.area ?? area ?? "";
     const o = next.only ?? (pendingOnly ? "1" : "");
+    const st = next.street ?? street ?? "";
     if (a) p.set("area", a);
     if (o === "1") p.set("only", "1");
+    if (st) p.set("street", st);
     const q = p.toString();
     return q ? `/visits/streets?${q}` : "/visits/streets";
   };
+
+  const streetOptions: StreetOption[] = [
+    { value: "", label: `كل الشوارع (${all.length})`, href: href({ street: "" }) },
+    ...all.map((g) => ({
+      value: g.key,
+      label: `${g.street} — ${g.students.length}`,
+      href: href({ street: g.key }),
+    })),
+  ];
 
   return (
     <>
@@ -148,6 +162,8 @@ export default async function StreetsPage({
               <Chip key={a} href={href({ area: a })} active={area === a} label={a} />
             ))}
           </div>
+          <StreetFilter options={streetOptions} value={street ?? ""} />
+
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             <Chip
               href={href({ only: pendingOnly ? "" : "1" })}
@@ -194,7 +210,7 @@ export default async function StreetsPage({
           );
         })}
 
-        {noAddress.length > 0 && (
+        {!street && noAddress.length > 0 && (
           <section className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
             <header className="px-4 pt-3 pb-2 border-b border-slate-100 bg-amber-50">
               <h3 className="font-bold text-amber-900">

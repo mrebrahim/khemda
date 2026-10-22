@@ -42,3 +42,30 @@ export async function toggleVisit(studentId: number, visited: boolean) {
   revalidatePath("/visits");
   return { ok: true as const };
 }
+
+/** الخادم بيكتب أو يعدّل عنوان الولد من جوّه سكشن الافتقاد */
+export async function saveAddress(studentId: number, address: string) {
+  if (!Number.isInteger(studentId) || studentId <= 0) {
+    return { ok: false as const, error: "المخدوم ده مش موجود" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "لازم تسجّل دخول" };
+
+  const clean = String(address ?? "").replace(/\s+/g, " ").trim().slice(0, 200);
+
+  const { error } = await supabase
+    .from("students")
+    .update({ address: clean === "" ? null : clean })
+    .eq("id", studentId);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/visits");
+  revalidatePath("/visits/streets");
+  revalidatePath("/students");
+  return { ok: true as const, address: clean };
+}

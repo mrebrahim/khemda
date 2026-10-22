@@ -1,6 +1,7 @@
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import VisitRow, { type VisitStudent } from "@/components/VisitRow";
+import StreetFilter, { type StreetOption } from "@/components/StreetFilter";
 import { createClient } from "@/lib/supabase/server";
 import { areaRank, getClassServants, stageRank } from "@/lib/reports";
 import { phonesOf, weeksBetween, weekStartOf } from "@/lib/visits";
@@ -20,9 +21,9 @@ type Group = {
 export default async function VisitsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ stage?: string; area?: string }>;
+  searchParams: Promise<{ stage?: string; area?: string; street?: string }>;
 }) {
-  const { stage, area } = await searchParams;
+  const { stage, area, street } = await searchParams;
   const today = todayISO();
   const week = weekStartOf(today);
 
@@ -53,6 +54,7 @@ export default async function VisitsPage({
   );
 
   const groups = new Map<string, Group>();
+  const streetCount = new Map<string, { name: string; n: number }>();
   let neverVisited = 0;
   let visitedThisWeek = 0;
   let total = 0;
@@ -68,7 +70,16 @@ export default async function VisitsPage({
     if (!last) neverVisited++;
     if (done) visitedThisWeek++;
 
+
     const parsed = parseAddress(st.address);
+    const sKey = parsed.streetKey;
+    if (sKey) {
+      const cur = streetCount.get(sKey);
+      if (cur) cur.n++;
+      else streetCount.set(sKey, { name: parsed.street ?? sKey, n: 1 });
+    }
+    if (street && sKey !== street) continue;
+
     const row: VisitStudent = {
       id: st.id,
       full_name: st.full_name,
@@ -121,15 +132,32 @@ export default async function VisitsPage({
         stageRank(a.stage) - stageRank(b.stage) || areaRank(a.area) - areaRank(b.area),
     );
 
-  const filterHref = (next: { stage?: string; area?: string }) => {
+  const filterHref = (next: { stage?: string; area?: string; street?: string }) => {
     const p = new URLSearchParams();
     const s = next.stage ?? stage;
     const a = next.area ?? area;
+    const st = next.street ?? street;
     if (s) p.set("stage", s);
     if (a) p.set("area", a);
+    if (st) p.set("street", st);
     const q = p.toString();
     return q ? `/visits?${q}` : "/visits";
   };
+
+  const streetOptions: StreetOption[] = [
+    {
+      value: "",
+      label: `كل الشوارع (${streetCount.size})`,
+      href: filterHref({ street: "" }),
+    },
+    ...[...streetCount.entries()]
+      .sort((a, b) => b[1].n - a[1].n || a[1].name.localeCompare(b[1].name, "ar"))
+      .map(([key, v]) => ({
+        value: key,
+        label: `${v.name} — ${v.n}`,
+        href: filterHref({ street: key }),
+      })),
+  ];
 
   return (
     <>
@@ -167,6 +195,15 @@ export default async function VisitsPage({
               <Chip key={s} href={filterHref({ stage: s })} active={stage === s} label={s} />
             ))}
           </div>
+          <StreetFilter options={streetOptions} value={street ?? ""} />
+
+          {street && (
+            <p className="mt-2 text-xs font-bold text-brand-800 bg-brand-50 border border-brand-200 rounded-xl px-3 py-2">
+              بتشوف {streetCount.get(street)?.name ?? "شارع"} بس — الأرقام فوق
+              للفصل كله.
+            </p>
+          )}
+
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             <Chip href={filterHref({ area: "" })} active={!area} label="كل المناطق" />
             {AREAS.map((a) => (
