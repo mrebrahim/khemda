@@ -14,6 +14,7 @@ import {
   removePrizeForm,
   rotateQrForm,
   setStatusForm,
+  toggleAttendanceForm,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -123,6 +124,44 @@ export default async function LuckyEventPage({
               </button>
             </form>
           </div>
+
+          {/* شرط الحضور: مقفول = أي ولد بكود الطالب يفتح على طول */}
+          <form
+            action={toggleAttendanceForm.bind(null, eventId, !event.require_attendance)}
+            className="mt-3"
+          >
+            <button
+              type="submit"
+              aria-pressed={event.require_attendance}
+              className={`w-full rounded-xl border px-3 py-2.5 text-start transition ${
+                event.require_attendance
+                  ? "border-amber-300 bg-amber-50"
+                  : "border-emerald-300 bg-emerald-50"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <span className="text-lg" aria-hidden="true">
+                  {event.require_attendance ? "🔒" : "🔓"}
+                </span>
+                <span className="grow">
+                  <span
+                    className={`block text-sm font-bold ${
+                      event.require_attendance ? "text-amber-900" : "text-emerald-900"
+                    }`}
+                  >
+                    {event.require_attendance
+                      ? "لازم تسجّل حضور الولد الأول"
+                      : "أي ولد بكود الطالب يفتح على طول"}
+                  </span>
+                  <span className="block text-[11px] text-slate-500 mt-0.5">
+                    {event.require_attendance
+                      ? "دوس عشان تشيل الشرط وتخلي الولاد يفتحوا بالكود بتاعهم"
+                      : "دوس عشان تطلب الحضور قبل الفتح"}
+                  </span>
+                </span>
+              </span>
+            </button>
+          </form>
 
           <div className="grid grid-cols-3 gap-2 mt-3 text-center">
             <Box n={attempts?.length ?? 0} label="صندوق اتفتح" tone="slate" />

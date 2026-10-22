@@ -364,3 +364,28 @@ export async function confirmHomeMissionForm(missionId: number, _fd: FormData) {
 export async function rejectHomeMissionForm(missionId: number, _fd: FormData) {
   await rejectHomeMission(missionId);
 }
+
+/** تشغيل وإطفاء شرط الحضور من صفحة الحدث */
+export async function toggleAttendance(eventId: number, required: boolean) {
+  const by = await servant();
+  if (!by) return { ok: false as const, error: "لازم تسجّل دخول" };
+
+  const supabase = await createAdminClient();
+  const { error } = await supabase
+    .from("lucky_events")
+    .update({ require_attendance: required })
+    .eq("id", eventId);
+  if (error) return { ok: false as const, error: error.message };
+
+  await log(eventId, by, `attendance:${required ? "on" : "off"}`);
+  revalidatePath(`/lucky/${eventId}`);
+  return { ok: true as const };
+}
+
+export async function toggleAttendanceForm(
+  eventId: number,
+  required: boolean,
+  _fd: FormData,
+) {
+  await toggleAttendance(eventId, required);
+}

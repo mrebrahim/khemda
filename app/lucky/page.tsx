@@ -89,14 +89,17 @@ export default async function LuckyPage() {
               </label>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                name="require_attendance"
-                defaultChecked
-                className="w-4 h-4"
-              />
-              لازم يكون حضوره متسجّل النهارده
+            {/* مقفول من الأول: الولد يفتح بكود الطالب بتاعه على
+                طول. اللي عايز يربطه بالحضور يعلّمه هنا أو من
+                صفحة الحدث. */}
+            <label className="flex items-start gap-2 text-sm text-slate-700">
+              <input type="checkbox" name="require_attendance" className="w-4 h-4 mt-0.5" />
+              <span>
+                لازم يكون حضوره متسجّل النهارده
+                <span className="block text-[11px] text-slate-500">
+                  سيبها فاضية عشان أي ولد بكود الطالب يفتح على طول
+                </span>
+              </span>
             </label>
 
             <button
