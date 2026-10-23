@@ -1,6 +1,6 @@
 import NavBar from "@/components/NavBar";
 import { createClient } from "@/lib/supabase/server";
-import { PRIZE } from "@/lib/prizes";
+import { itemOf, prizeLabel } from "@/lib/prizes";
 import { decide } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -61,12 +61,12 @@ export default async function ClaimsPage() {
         {pending.map((c) => (
           <div key={c.id} className="bg-white rounded-2xl border border-amber-300 p-4">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{PRIZE[c.level]?.emoji ?? "🎁"}</span>
+              <span className="text-3xl">{itemOf(c.level)?.emoji ?? "🎁"}</span>
               <div className="grow min-w-0">
                 <p className="font-bold text-brand-900">{c.name}</p>
                 <p className="text-xs text-slate-500">{c.label}</p>
                 <p className="text-xs text-slate-600 mt-0.5">
-                  {PRIZE[c.level]?.label} —{" "}
+                  {prizeLabel(c.level)} —{" "}
                   <span dir="ltr">LEVEL {String(c.level).padStart(2, "0")}</span>
                 </p>
               </div>
@@ -98,11 +98,11 @@ export default async function ClaimsPage() {
             <ul className="divide-y divide-slate-100">
               {rest.map((c) => (
                 <li key={c.id} className="px-4 py-2.5 flex items-center gap-3">
-                  <span className="text-xl">{PRIZE[c.level]?.emoji ?? "🎁"}</span>
+                  <span className="text-xl">{itemOf(c.level)?.emoji ?? "🎁"}</span>
                   <div className="grow min-w-0">
                     <p className="font-bold text-sm truncate">{c.name}</p>
                     <p className="text-[11px] text-slate-400">
-                      {PRIZE[c.level]?.label}
+                      {prizeLabel(c.level)}
                     </p>
                   </div>
                   <span

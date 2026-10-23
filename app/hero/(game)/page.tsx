@@ -3,7 +3,7 @@ import Link from "next/link";
 import { loadHero } from "@/lib/hero-data";
 import WeekStrip from "@/components/WeekStrip";
 import MissionTimer from "@/components/MissionTimer";
-import { PRIZE } from "@/lib/prizes";
+import { SHOP } from "@/lib/prizes";
 import { GFX } from "@/lib/assets";
 import InviteCard from "@/components/InviteCard";
 import SeasonRaceCard from "@/components/SeasonRaceCard";
@@ -31,9 +31,8 @@ export default async function HeroHome() {
     inviteState(state.hero.studentId),
   ]);
   const level = rank.current?.level ?? 1;
-  const nextPrize = ranks
-    .filter((r) => PRIZE[r.level] && r.level > level)
-    .sort((a, b) => a.level - b.level)[0];
+  // الجايزة الجاية = أرخص حاجة في المحل لسه نقطه مش كفاية ليها
+  const nextPrize = SHOP.find((p) => p.cost > totalXp);
 
   const done = doneToday.size;
   const goal = prefs.daily_goal;
@@ -169,23 +168,23 @@ export default async function HeroHome() {
           <p className="text-[10px] tracking-[0.25em] text-amber-400 font-bold mt-1">
             جايزتك الجاية
           </p>
-          <p className="text-5xl my-2">{PRIZE[nextPrize.level].emoji}</p>
-          <p className="font-bold text-white text-lg">{PRIZE[nextPrize.level].label}</p>
+          <p className="text-5xl my-2">{nextPrize.emoji}</p>
+          <p className="font-bold text-white text-lg">{nextPrize.label}</p>
 
           <div className="flex items-center gap-2 mt-3">
             <span className="b-bar block grow h-2 bg-black/50 overflow-hidden">
               <span
                 style={{
-                  width: `${Math.min(100, Math.round((totalXp / nextPrize.xp_required) * 100))}%`,
+                  width: `${Math.min(100, Math.round((totalXp / nextPrize.cost) * 100))}%`,
                 }}
               />
             </span>
             <span className="text-[11px] font-bold text-amber-400 shrink-0 tabular-nums">
-              فاضلك {nextPrize.xp_required - totalXp}
+              فاضلك {nextPrize.cost - totalXp}
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1" dir="ltr">
-            LEVEL {String(nextPrize.level).padStart(2, "0")}
+          <p className="text-[11px] text-slate-400 mt-1 tabular-nums">
+            سعرها {nextPrize.cost} نقطة
           </p>
         </Link>
       )}

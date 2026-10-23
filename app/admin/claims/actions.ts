@@ -25,5 +25,13 @@ export async function decide(
     .eq("id", id);
 
   if (error) throw new Error(error.message);
+
+  // الرفض بيرجّع النقط اللي اتخصمت — الولد مايتعاقبش على طلب
+  // المشرف هو اللي رفضه
+  if (status === "rejected") {
+    await supabase.rpc("refund_prize", { p_claim: id, p_by: by });
+  }
+
   revalidatePath("/admin/claims");
+  revalidatePath("/hero", "layout");
 }

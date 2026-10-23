@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { itemOf } from "@/lib/prizes";
 import { redirect } from "next/navigation";
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { currentHero, heroLogin, heroLogout } from "@/lib/student-auth";
@@ -179,10 +180,20 @@ export async function completeGame(answers: string[]) {
   return recordDaily(hero.studentId, "game", today);
 }
 
-/** الولد بيطلب جايزة مستوى وصله. المشرف هو اللي بيوافق ويسلّم. */
-export async function claimReward(level: number) {
+/**
+ * الولد بيشتري هدية من المحل.
+ *
+ * السعر بيتخصم من نقطه على طول، ومستواه بينزل معاه — فالشراء
+ * قرار حقيقي مش زرار. والخصم والطلب بيتعملوا في معاملة واحدة
+ * جوّه الداتابيز مع قفل على الولد، فمفيش شراء حاجتين بنفس
+ * النقط.
+ */
+export async function claimReward(key: number) {
   const hero = await currentHero();
   if (!hero) return { ok: false as const, error: "لازم تسجّل دخول" };
+
+  const item = itemOf(Number(key));
+  if (!item) return { ok: false as const, error: "الهدية دي مش موجودة" };
 
   const supabase = await createClient();
   const { data: season } = await supabase
@@ -192,38 +203,25 @@ export async function claimReward(level: number) {
     .maybeSingle();
   if (!season) return { ok: false as const, error: "مفيش موسم نشط" };
 
-  // التحقق من الاستحقاق على السيرفر — مش بالاعتماد على الواجهة
-  const [{ data: rank }, { data: xpRows }] = await Promise.all([
-    supabase.from("ranks").select("level, xp_required").eq("level", level).maybeSingle(),
-    supabase
-      .from("xp_ledger")
-      .select("xp")
-      .eq("student_id", hero.studentId)
-      .eq("season_id", season.id),
-  ]);
-
-  if (!rank) return { ok: false as const, error: "المستوى ده مش موجود" };
-
-  const totalXp = (xpRows ?? []).reduce((n, r) => n + r.xp, 0);
-  if (totalXp < rank.xp_required) {
-    return { ok: false as const, error: "لسه موصلتش للمستوى ده" };
-  }
-
-  const { error } = await supabase.from("reward_claims").insert({
-    student_id: hero.studentId,
-    season_id: season.id,
-    level,
+  const { data, error } = await supabase.rpc("claim_prize", {
+    p_student: hero.studentId,
+    p_season: season.id,
+    p_level: item.key,
+    p_cost: item.cost,
+    p_label: item.label,
   });
 
   if (error) {
-    if (error.code === "23505") {
-      return { ok: false as const, error: "طلبت الجايزة دي قبل كده" };
+    if (error.code === "23505" || /duplicate/i.test(error.message)) {
+      return { ok: false as const, error: "خدت الهدية دي قبل كده" };
     }
-    throw new Error(error.message);
+    return { ok: false as const, error: error.message };
   }
 
-  revalidatePath("/hero/rewards");
-  return { ok: true as const };
+  const row = (data ?? [])[0] as { balance: number } | undefined;
+
+  revalidatePath("/hero", "layout");
+  return { ok: true as const, balance: row?.balance ?? 0, cost: item.cost };
 }
 
 /** الولد بيظبط تذكيره: يشتغل ولا لأ، الميعاد، هدفه اليومي */

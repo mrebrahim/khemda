@@ -173,7 +173,7 @@ export default async function BoardPage({
                   </section>
                 )}
 
-                <Prizes ranks={ranks} />
+                <Prizes />
               </aside>
 
               {/* ===== باقي الأبطال ===== */}
