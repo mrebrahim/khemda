@@ -2,18 +2,26 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import HeroAvatar from "@/components/board/HeroAvatar";
 import { PLACE_BADGE, GFX } from "@/lib/assets";
 import { tierColor, type Ranked } from "@/lib/board";
 import { normalizeArabic } from "@/lib/types";
 
+/**
+ * اللوحة مفتوحة للزوار، فتفاصيل الولد (نقطه على إيه وإمتى)
+ * بتبان للخادم المسجّل دخول بس — مش لأي حد بيفتح اللينك.
+ */
 export default function BoardList({
   rows,
   meId,
+  isServant = false,
 }: {
   rows: Ranked[];
   /** لو الولد داخل بكوده، بطاقته بتتميّز ويقدر يقفز عليها */
   meId: number | null;
+  /** الخادم بيقدر يدوس على الولد ويشوف تقرير نقطه */
+  isServant?: boolean;
 }) {
   const [q, setQ] = useState("");
   const term = normalizeArabic(q);
@@ -119,7 +127,16 @@ export default function BoardList({
 
                 <div className="grow min-w-0">
                   <p className="font-bold text-white text-[15px] leading-tight truncate">
-                    {s.display_name}
+                    {isServant ? (
+                      <Link
+                        href={`/students/${s.id}`}
+                        className="hover:text-amber-300 transition underline decoration-dotted underline-offset-4"
+                      >
+                        {s.display_name}
+                      </Link>
+                    ) : (
+                      s.display_name
+                    )}
                     {s.isMe && (
                       <span className="mr-1.5 text-[10px] font-bold text-amber-300 align-middle">
                         (إنت)

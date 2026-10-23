@@ -241,6 +241,27 @@ export default async function HeroHome() {
         )}
       </section>
 
+      <Link
+        href="/hero/report"
+        className="b-frame block p-4"
+        style={{ borderColor: "rgba(34,211,238,.35)" }}
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-3xl shrink-0" aria-hidden="true">
+            📋
+          </span>
+          <span className="grow min-w-0">
+            <span className="block font-bold text-white">تقرير نقطك</span>
+            <span className="block text-[11px] text-slate-400">
+              خدت كام وعلى إيه ويوم إيه
+            </span>
+          </span>
+          <span className="shrink-0 text-cyan-300 text-lg" aria-hidden="true">
+            ‹
+          </span>
+        </div>
+      </Link>
+
       <BadgesCard badges={badges} />
 
       <InviteCard

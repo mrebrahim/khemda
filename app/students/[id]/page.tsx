@@ -7,6 +7,8 @@ import { ensureStudentAccount } from "@/lib/student-code";
 import { qrDataUrl } from "@/lib/qr";
 import { getBaseUrl } from "@/lib/site";
 import Link from "next/link";
+import XpReportView from "@/components/XpReport";
+import { xpReport } from "@/lib/xp-report";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +69,7 @@ export default async function StudentProfile({
         .eq("season_id", season.id)
     : { data: [] };
 
+  const report = await xpReport(studentId, season?.id ?? null);
   const totalXp = (xpRows ?? []).reduce((n, r) => n + r.xp, 0);
   const verifiedXp = (xpRows ?? [])
     .filter((r) => r.is_verified)
@@ -230,6 +233,9 @@ export default async function StudentProfile({
             <Stat label="القداس الشهري" value={monthlyMassAttended} highlight />
           </div>
         </section>
+
+        {/* تقرير النقط: خد كام وعلى إيه ويوم إيه */}
+        <XpReportView report={report} />
 
         {/* البيانات */}
         <section className="bg-white rounded-2xl border border-slate-200 overflow-hidden">

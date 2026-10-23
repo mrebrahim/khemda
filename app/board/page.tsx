@@ -39,7 +39,8 @@ export default async function BoardPage({
 
   // الصفحة مفتوحة للزائر، فبتقرا من views فيها الأعمدة الآمنة بس
   const supabase = await createClient();
-  const [{ data: season }, { data: rows }, { data: rankRows }, hero] = await Promise.all([
+  const [{ data: season }, { data: rows }, { data: rankRows }, hero, { data: auth }] =
+    await Promise.all([
     supabase.from("board_season").select("name, ends_on").maybeSingle(),
     supabase
       .from(source)
@@ -52,7 +53,11 @@ export default async function BoardPage({
       .order("display_name", { ascending: true }),
     supabase.from("board_ranks").select("level, name, tier, xp_required"),
     currentHero(),
+    supabase.auth.getUser(),
   ]);
+
+  // الخادم بس هو اللي بيقدر يفتح تفاصيل الولد من اللوحة
+  const isServant = Boolean(auth?.user);
 
   const ranks = (rankRows ?? []) as BoardRank[];
   const all = (rows ?? []) as BoardRow[];
@@ -185,7 +190,7 @@ export default async function BoardPage({
                   </span>
                 </div>
 
-                <BoardList rows={ranked} meId={me?.id ?? null} />
+                <BoardList rows={ranked} meId={me?.id ?? null} isServant={isServant} />
 
                 <p className="text-center text-slate-400 text-xs mt-7 leading-relaxed">
                   {isYear ? (
