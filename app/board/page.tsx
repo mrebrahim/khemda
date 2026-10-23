@@ -10,6 +10,7 @@ import {
   type Ranked,
 } from "@/lib/board";
 import BoardFilters from "@/components/BoardFilters";
+import BoardTabs from "@/components/board/BoardTabs";
 import BoardList from "@/components/board/BoardList";
 import MyCard from "@/components/board/MyCard";
 import Podium from "@/components/board/Podium";
@@ -28,16 +29,20 @@ export const metadata: Metadata = {
 export default async function BoardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ stage?: string; area?: string }>;
+  searchParams: Promise<{ stage?: string; area?: string; view?: string }>;
 }) {
-  const { stage, area } = await searchParams;
+  const { stage, area, view } = await searchParams;
+
+  // لوحتين: الموسم (بتصفّر) والسنة (مجموع كل المواسم، مابتصفّرش)
+  const isYear = view === "year";
+  const source = isYear ? "board_alltime" : "board_leaderboard";
 
   // الصفحة مفتوحة للزائر، فبتقرا من views فيها الأعمدة الآمنة بس
   const supabase = await createClient();
   const [{ data: season }, { data: rows }, { data: rankRows }, hero] = await Promise.all([
-    supabase.from("board_season").select("name").maybeSingle(),
+    supabase.from("board_season").select("name, ends_on").maybeSingle(),
     supabase
-      .from("board_leaderboard")
+      .from(source)
       .select(
         "id, display_name, area, stage, verified_xp, total_xp, rank_name, rank_tier, rank_level",
       )
@@ -92,8 +97,10 @@ export default async function BoardPage({
                 🏆 لوحة الأبطال
               </h1>
               <p className="arena-ribbon inline-block px-5 py-1 mt-2 text-sm font-bold text-amber-200">
-                {season?.name ?? "الموسم"}
+                {isYear ? "كل المواسم من أول السنة" : (season?.name ?? "الموسم")}
               </p>
+
+              <BoardTabs isYear={isYear} stage={stage} area={area} />
               <div className="mt-3">
                 <MusicToggle />
               </div>
@@ -174,16 +181,33 @@ export default async function BoardPage({
                 <div className="flex items-baseline justify-between gap-2 px-1">
                   <h2 className="font-bold text-white">⚔️ باقي الأبطال</h2>
                   <span className="text-[11px] text-slate-400 tabular-nums">
-                    {ranked.length} بطل في الموسم
+                    {ranked.length} بطل {isYear ? "في السنة" : "في الموسم"}
                   </span>
                 </div>
 
                 <BoardList rows={ranked} meId={me?.id ?? null} />
 
                 <p className="text-center text-slate-400 text-xs mt-7 leading-relaxed">
-                  الترتيب على النقط الموثقة من الحضور والمسابقات.
-                  <br />
-                  مهمات الصلاة والكتاب ليها نقطها بس مش داخلة في الترتيب ده.
+                  {isYear ? (
+                    <>
+                      دي نقطك من أول السنة، بكل المواسم مع بعض — مابتصفّرش
+                      أبدًا.
+                      <br />
+                      الجايزة الكبرى لأعلى نقط هنا في آخر السنة.
+                    </>
+                  ) : (
+                    <>
+                      نقط الموسم الحالي بس. بتبدأ من أول مع كل موسم جديد —
+                      واللي كسبته محفوظ في{" "}
+                      <Link
+                        href="/board?view=year"
+                        className="text-amber-300 font-bold hover:underline"
+                      >
+                        لوحة السنة
+                      </Link>
+                      .
+                    </>
+                  )}
                 </p>
               </div>
             </div>

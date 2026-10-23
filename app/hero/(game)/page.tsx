@@ -6,6 +6,7 @@ import MissionTimer from "@/components/MissionTimer";
 import { PRIZE } from "@/lib/prizes";
 import { GFX } from "@/lib/assets";
 import InviteCard from "@/components/InviteCard";
+import SeasonRaceCard from "@/components/SeasonRaceCard";
 import { inviteState } from "@/lib/referral";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,7 +16,8 @@ export default async function HeroHome() {
   const state = await loadHero();
   if (!state) return null;
 
-  const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour, window: win } = state;
+  const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour, window: win, race } =
+    state;
 
   // كارت الدعوة: كود الولد نفسه + هل ينفع يكتب كود حد
   const supabase = await createAdminClient();
@@ -212,6 +214,8 @@ export default async function HeroHome() {
           <span className="shrink-0 text-amber-400 font-bold text-sm">شوف ←</span>
         </div>
       </Link>
+
+      {race && <SeasonRaceCard race={race} />}
 
       {/* السلسلة */}
       <section className="b-frame p-4">

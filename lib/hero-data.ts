@@ -13,6 +13,7 @@ import {
   type MissionWindow,
   type ReminderPrefs,
 } from "@/lib/habits";
+import { daysLeft, type SeasonRace } from "@/lib/board";
 import { todayISO } from "@/lib/types";
 
 export type HeroState = {
@@ -33,6 +34,8 @@ export type HeroState = {
   hour: number;
   /** نافذة المهمات: بتفتح ٧ بالليل وبتقفل نص الليل */
   window: MissionWindow;
+  /** سباق الموسم: فاضل كام يوم، ومركزه، والفرق عن اللي قبله */
+  race: SeasonRace | null;
 };
 
 export function missingConfig(): string[] {
@@ -77,6 +80,8 @@ export async function loadHero(): Promise<HeroState | null> {
     .filter((r) => r.is_verified)
     .reduce((n, r) => n + r.xp, 0);
 
+  const race = season ? await seasonRace(hero.studentId, season, today) : null;
+
   return {
     hero,
     totalXp,
@@ -92,5 +97,38 @@ export async function loadHero(): Promise<HeroState | null> {
     prefs,
     hour: cairoHour(),
     window: missionWindow(),
+    race,
+  };
+}
+
+/**
+ * مركز الولد في سباق الموسم.
+ *
+ * بنقرا من نفس الview اللي اللوحة بتقرا منه، فالترتيب اللي
+ * بيشوفه هنا هو نفسه اللي على اللوحة بالظبط.
+ */
+async function seasonRace(
+  studentId: number,
+  season: { name: string; ends_on: string },
+  today: string,
+): Promise<SeasonRace | null> {
+  const supabase = await createAdminClient();
+  const { data } = await supabase
+    .from("board_leaderboard")
+    .select("id, total_xp, rank_level")
+    .order("rank_level", { ascending: false })
+    .order("total_xp", { ascending: false })
+    .order("display_name", { ascending: true });
+
+  const rows = data ?? [];
+  const i = rows.findIndex((r) => r.id === studentId);
+
+  return {
+    seasonName: season.name,
+    left: daysLeft(season.ends_on, today),
+    place: i >= 0 ? i + 1 : rows.length + 1,
+    total: rows.length,
+    gapAbove: i > 0 ? rows[i - 1].total_xp - rows[i].total_xp : null,
+    gapBelow: i >= 0 && i < rows.length - 1 ? rows[i].total_xp - rows[i + 1].total_xp : null,
   };
 }

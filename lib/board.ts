@@ -79,3 +79,33 @@ export function hypeFor(place: number, gapAbove: number | null): string {
   }
   return "كل نقطة بتفرق — ابدأ دلوقتي وهتلاقي اسمك طالع فوق 🔥";
 }
+
+/** كام يوم فاضل على آخر يوم في الموسم (شامل اليوم نفسه) */
+export function daysLeft(endsOn: string, today: string): number {
+  const a = Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10));
+  const b = Date.UTC(+endsOn.slice(0, 4), +endsOn.slice(5, 7) - 1, +endsOn.slice(8, 10));
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
+/** «١٨ يوم» / «يومين» / «آخر يوم» — بالعربي */
+export function daysLabel(n: number): string {
+  if (n <= 0) return "آخر يوم";
+  if (n === 1) return "يوم واحد";
+  if (n === 2) return "يومين";
+  if (n <= 10) return `${n} أيام`;
+  return `${n} يوم`;
+}
+
+export type SeasonRace = {
+  seasonName: string;
+  /** أيام فاضلة لآخر الموسم */
+  left: number;
+  /** مركزه دلوقتي */
+  place: number;
+  /** عدد الأبطال اللي ليهم نقط */
+  total: number;
+  /** الفرق بينه وبين اللي قبله — null لو هو الأول */
+  gapAbove: number | null;
+  /** الفرق بينه وبين اللي وراه — null لو هو آخر واحد */
+  gapBelow: number | null;
+};
