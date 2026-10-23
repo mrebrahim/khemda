@@ -18,6 +18,8 @@ export default function Scanner({ event }: { event?: ScanEvent } = {}) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [count, setCount] = useState(0);
+  // الكود المكتوب بالإيد — لما الكاميرا ماتنفعش أو الكارت ضايع
+  const [code, setCode] = useState("");
 
   const router = useRouter();
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
@@ -52,22 +54,7 @@ export default function Scanner({ event }: { event?: ScanEvent } = {}) {
           lastToken.current = decoded;
 
           await stopCamera();
-          setPhase("confirming");
-
-          try {
-            const found = event
-              ? await identifyForEvent(event.key, event.date, decoded)
-              : await identify(decoded);
-            if (!found) {
-              setError("الكود ده مش معروف — جرّب تاني أو سجّله يدوي");
-              setPhase("error");
-              return;
-            }
-            setTarget(found);
-          } catch {
-            setError("حصلت مشكلة في قراءة الكود");
-            setPhase("error");
-          }
+          await lookUp(decoded);
         },
         () => {
           // فريم من غير QR — عادي
@@ -77,6 +64,35 @@ export default function Scanner({ event }: { event?: ScanEvent } = {}) {
       setError("مقدرناش نفتح الكاميرا. اسمح للمتصفح يستخدمها وجرّب تاني.");
       setPhase("error");
     }
+  }
+
+  /** بنشوف مين صاحب الكود — نفس الخطوة سواء اتمسح أو اتكتب */
+  async function lookUp(token: string) {
+    lastToken.current = token;
+    setPhase("confirming");
+    try {
+      const found = event
+        ? await identifyForEvent(event.key, event.date, token)
+        : await identify(token);
+      if (!found) {
+        setError("الكود ده مش معروف — راجعه وجرّب تاني");
+        setPhase("error");
+        return;
+      }
+      setTarget(found);
+    } catch {
+      setError("حصلت مشكلة في قراءة الكود");
+      setPhase("error");
+    }
+  }
+
+  function submitCode(e: React.FormEvent) {
+    e.preventDefault();
+    const value = code.trim();
+    if (!value) return;
+    setCode("");
+    void stopCamera();
+    void lookUp(value);
   }
 
   useEffect(() => {
@@ -146,6 +162,29 @@ export default function Scanner({ event }: { event?: ScanEvent } = {}) {
         >
           📷 افتح الكاميرا
         </button>
+      )}
+
+      {/* الكود بالإيد — الكارت ضايع أو الكاميرا مش راضية تفتح */}
+      {(phase === "idle" || phase === "error") && (
+        <form onSubmit={submitCode} className="flex gap-2">
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="أو اكتب كود الولد"
+            dir="ltr"
+            autoCapitalize="characters"
+            autoComplete="off"
+            maxLength={12}
+            className="grow rounded-xl border border-slate-300 px-3 py-3 text-center font-mono tracking-widest uppercase placeholder:tracking-normal placeholder:font-sans focus:border-brand-500 focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={!code.trim()}
+            className="shrink-0 rounded-xl bg-slate-800 px-5 font-bold text-white disabled:opacity-40"
+          >
+            دوّر
+          </button>
+        </form>
       )}
 
       {phase === "confirming" && !target && (

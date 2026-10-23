@@ -59,6 +59,9 @@ export default function EventRecorder({
   // لما السيرفر يرجّع بيانات جديدة (مسح كود مثلاً) الكشف يتحدّث
   useEffect(() => setMarks(initial), [initial]);
   const [query, setQuery] = useState("");
+  // فلتر المرحلة والمنطقة — الخادم بيشوف فصله بس بدل الكشف كله
+  const [stage, setStage] = useState("");
+  const [area, setArea] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [busy, setBusy] = useState<Set<number>>(new Set());
   const [, startTransition] = useTransition();
@@ -91,18 +94,35 @@ export default function EventRecorder({
     return byPlace;
   }, [allStudents, marks]);
 
+  const stages = useMemo(
+    () => [...new Set(groups.map((g) => g.stage))],
+    [groups],
+  );
+  const areas = useMemo(() => [...new Set(groups.map((g) => g.area))], [groups]);
+
   const filtered = useMemo(() => {
+    const byClass = groups.filter(
+      (g) => (!stage || g.stage === stage) && (!area || g.area === area),
+    );
+
     const q = normalizeArabic(query);
-    if (!q) return groups;
+    if (!q) return byClass;
     const qs = skeleton(query);
     const hit = (s: RecordStudent) => {
       const n = normalizeArabic(s.full_name);
       return n.includes(q) || (qs.length >= 3 && skeleton(s.full_name).includes(qs));
     };
-    return groups
+    return byClass
       .map((g) => ({ ...g, students: g.students.filter(hit) }))
       .filter((g) => g.students.length > 0);
-  }, [groups, query]);
+  }, [groups, query, stage, area]);
+
+  // العدّاد بيعدّ اللي قدامك دلوقتي، مش الكشف كله
+  const shown = useMemo(() => filtered.flatMap((g) => g.students), [filtered]);
+  const shownDone = useMemo(
+    () => shown.filter((s) => marks[s.id]?.present).length,
+    [shown, marks],
+  );
 
   function say(text: string, tone: Toast["tone"] = "good") {
     const id = Date.now() + Math.random();
@@ -256,6 +276,12 @@ export default function EventRecorder({
               سجّلت <span className="tabular-nums">{present}</span> من{" "}
               <span className="tabular-nums">{allStudents.length}</span> — نزّلنا لهم{" "}
               <span className="tabular-nums text-emerald-700">{totalXp}</span> نقطة
+              {(stage || area) && (
+                <span className="text-slate-400 font-normal">
+                  {" "}
+                  • قدامك دلوقتي {shownDone}/{shown.length}
+                </span>
+              )}
             </p>
           </div>
           <span className="text-2xl shrink-0" aria-hidden="true">
@@ -270,6 +296,25 @@ export default function EventRecorder({
           placeholder="دوّر باسم الولد…"
           className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
         />
+
+        {(stages.length > 1 || areas.length > 1) && (
+          <div className="flex gap-1.5 overflow-x-auto mt-2 pb-0.5 -mx-1 px-1">
+            {stages.length > 1 && (
+              <Chips
+                value={stage}
+                all="كل المراحل"
+                options={stages}
+                onPick={setStage}
+              />
+            )}
+            {stages.length > 1 && areas.length > 1 && (
+              <span className="shrink-0 self-stretch w-px bg-slate-300 mx-0.5" />
+            )}
+            {areas.length > 1 && (
+              <Chips value={area} all="كل المناطق" options={areas} onPick={setArea} />
+            )}
+          </div>
+        )}
       </div>
 
       {placeXp && (
@@ -463,4 +508,37 @@ export default function EventRecorder({
 
 function first(name: string): string {
   return name.split(" ")[0];
+}
+
+/** شرايط اختيار: «الكل» وبعدها الاختيارات */
+function Chips({
+  value,
+  all,
+  options,
+  onPick,
+}: {
+  value: string;
+  all: string;
+  options: string[];
+  onPick: (v: string) => void;
+}) {
+  return (
+    <>
+      {["", ...options].map((o) => (
+        <button
+          key={o || "all"}
+          type="button"
+          onClick={() => onPick(o)}
+          aria-pressed={value === o}
+          className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold transition ${
+            value === o
+              ? "bg-brand-600 border-brand-600 text-white"
+              : "bg-white border-slate-300 text-slate-600 hover:border-brand-400"
+          }`}
+        >
+          {o || all}
+        </button>
+      ))}
+    </>
+  );
 }

@@ -86,8 +86,9 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: null,
     entryRule: "mass",
     placeRules: null,
-    bonusRule: null,
-    bonusLabel: null,
+    // الولد اللي قرا القراءات في القداس — ⭐ جنب اسمه
+    bonusRule: "readings",
+    bonusLabel: "قرا القراءات",
     field: "mass",
     remind: true,
     reminder: {
