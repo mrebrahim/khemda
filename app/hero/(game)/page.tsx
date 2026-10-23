@@ -20,12 +20,12 @@ export default async function HeroHome() {
   const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour, window: win, race, draw, badges } =
     state;
 
-  // كارت الدعوة: كود الولد نفسه + هل ينفع يكتب كود حد
+  // كارت الدعوة: كود دعوة الولد (مش كود دخوله) + هل ينفع يكتب كود حد
   const supabase = await createAdminClient();
   const [{ data: myAccount }, invite] = await Promise.all([
     supabase
       .from("student_accounts")
-      .select("login_code")
+      .select("invite_code")
       .eq("student_id", state.hero.studentId)
       .maybeSingle(),
     inviteState(state.hero.studentId),
@@ -265,7 +265,7 @@ export default async function HeroHome() {
       <BadgesCard badges={badges} />
 
       <InviteCard
-        myCode={myAccount?.login_code ?? null}
+        myCode={myAccount?.invite_code ?? null}
         state={invite.state}
         inviterName={invite.state === "done" ? invite.inviterName : null}
         xp={xpOf("referral")}

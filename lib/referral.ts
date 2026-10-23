@@ -86,9 +86,12 @@ export async function submitInvite(
   inviteeId: number,
   rawCode: string,
 ): Promise<SubmitResult> {
-  const code = rawCode.trim().toUpperCase();
-  if (!/^[A-Z0-9]{4,12}$/.test(code)) {
-    return { ok: false, error: "الكود مش مظبوط" };
+  // كود الدعوة شكله ABC-234. الشرطة مقصودة: دالة الدخول بترفض
+  // أي كود فيه غير حروف وأرقام، فكود الدعوة مستحيل يدخّل حد
+  // بحساب صاحبه.
+  const code = rawCode.trim().toUpperCase().replace(/\s+/g, "");
+  if (!/^[A-Z]{3}-[0-9]{3}$/.test(code)) {
+    return { ok: false, error: "كود الدعوة شكله زي ABC-234" };
   }
 
   const state = await inviteState(inviteeId);
@@ -103,7 +106,7 @@ export async function submitInvite(
   const { data: account } = await supabase
     .from("student_accounts")
     .select("student_id, is_active, is_demo, students!inner(is_active, full_name)")
-    .eq("login_code", code)
+    .eq("invite_code", code)
     .maybeSingle();
 
   const student = Array.isArray(account?.students) ? account.students[0] : account?.students;

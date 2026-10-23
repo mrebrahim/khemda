@@ -27,7 +27,7 @@ export default function InviteCard({
 
   const share = myCode
     ? `https://wa.me/?text=${encodeURIComponent(
-        `أنا بلعب «أبطال المهمة» 🔥\nادخل من هنا: https://khemda.vercel.app/hero\nولما يسألك مين علّمك اللعبة اكتب كودي: ${myCode}`,
+        `أنا بلعب «أبطال المهمة» 🔥\nادخل من هنا: https://khemda.vercel.app/hero\nولما يسألك مين علّمك اللعبة اكتب كود الدعوة بتاعي: ${myCode}`,
       )}`
     : null;
 
@@ -62,7 +62,7 @@ export default function InviteCard({
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               maxLength={12}
               dir="ltr"
-              placeholder="ABC123"
+              placeholder="ABC-234"
               aria-label="كود اللي علّمك اللعبة"
               className="grow bg-white/5 border border-white/20 px-3 py-2.5 text-center text-lg font-bold tracking-widest text-white focus:border-amber-500 focus:outline-none"
             />
@@ -91,10 +91,10 @@ export default function InviteCard({
 
       {myCode && (
         <div className="mt-4 pt-3 border-t border-white/10">
-          <p className="text-[11px] text-slate-500">كودك إنت</p>
+          <p className="text-[11px] text-slate-500">كود الدعوة بتاعك</p>
           <div className="flex items-center gap-2 mt-1">
             <span
-              className="grow font-bold text-xl tracking-[0.3em] text-amber-400 tabular-nums"
+              className="grow font-bold text-xl tracking-[0.2em] text-amber-400"
               dir="ltr"
             >
               {myCode}
@@ -111,7 +111,11 @@ export default function InviteCard({
             )}
           </div>
           <p className="text-[11px] text-slate-500 mt-1.5">
-            كل واحد يدخل اللعبة ويكتب كودك = <b className="text-amber-400">+{xp}</b> ليك.
+            كل واحد يدخل اللعبة ويكتب الكود ده = <b className="text-amber-400">+{xp}</b> ليك.
+          </p>
+          <p className="text-[11px] text-emerald-400/90 mt-1.5 leading-relaxed">
+            🔒 ده كود دعوة بس — محدش يقدر يدخل بحسابك بيه. كود دخولك
+            اللي على كارتك خليه لنفسك ومتديهوش لحد.
           </p>
         </div>
       )}
