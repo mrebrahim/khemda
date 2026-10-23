@@ -13,7 +13,7 @@ where bonus = true and bonuses = '{}';
 
 insert into activity_rules (code, name_ar, xp, category, is_verified, is_active, sort_order) values
   ('readings_prep', 'حضر تحضير القرايات', 10, 'friday', true, true, 65),
-  ('tasbeha_bonus', 'حضر التسبحة قبل القداس', 40, 'friday', true, true, 66)
+  ('tasbeha_bonus', 'حضر التسبحة قبل القداس', 20, 'friday', true, true, 66)
 on conflict (code) do update set
   is_active = true,
   xp = excluded.xp,
