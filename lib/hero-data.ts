@@ -15,6 +15,7 @@ import {
 } from "@/lib/habits";
 import { daysLeft, type SeasonRace } from "@/lib/board";
 import { drawStandingFor, type DrawStanding } from "@/lib/draws";
+import { badgesFor, type EarnedBadge } from "@/lib/badges";
 import { todayISO } from "@/lib/types";
 
 export type HeroState = {
@@ -39,6 +40,8 @@ export type HeroState = {
   race: SeasonRace | null;
   /** سحب آخر الموسم: داخل ولا فاضله كام نقطة */
   draw: DrawStanding | null;
+  /** الشارات — محسوبة من اللي عمله، مش متسجّلة */
+  badges: EarnedBadge[];
 };
 
 export function missingConfig(): string[] {
@@ -70,13 +73,23 @@ export async function loadHero(): Promise<HeroState | null> {
       .eq("on_date", today),
   ]);
 
-  const { data: xpRows } = season
-    ? await supabase
-        .from("xp_ledger")
-        .select("xp, is_verified")
-        .eq("student_id", hero.studentId)
-        .eq("season_id", season.id)
-    : { data: [] };
+  const [{ data: xpRows }, { data: deedRows }] = await Promise.all([
+    season
+      ? supabase
+          .from("xp_ledger")
+          .select("xp, is_verified")
+          .eq("student_id", hero.studentId)
+          .eq("season_id", season.id)
+      : Promise.resolve({ data: [] as { xp: number; is_verified: boolean }[] }),
+    // الشارات بتتحسب من السنة كلها، مش من الموسم — اللي عمله
+    // مش بيتشال منه مع الموسم الجديد
+    supabase.from("xp_ledger").select("rule_code").eq("student_id", hero.studentId),
+  ]);
+
+  const counts: Record<string, number> = {};
+  for (const r of deedRows ?? []) {
+    counts[r.rule_code] = (counts[r.rule_code] ?? 0) + 1;
+  }
 
   const totalXp = (xpRows ?? []).reduce((n, r) => n + r.xp, 0);
   const verifiedXp = (xpRows ?? [])
@@ -105,6 +118,7 @@ export async function loadHero(): Promise<HeroState | null> {
     window: missionWindow(),
     race,
     draw,
+    badges: badgesFor(counts, streak.longest_streak),
   };
 }
 

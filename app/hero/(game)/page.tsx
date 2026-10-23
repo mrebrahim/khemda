@@ -7,6 +7,7 @@ import { PRIZE } from "@/lib/prizes";
 import { GFX } from "@/lib/assets";
 import InviteCard from "@/components/InviteCard";
 import SeasonRaceCard from "@/components/SeasonRaceCard";
+import BadgesCard from "@/components/BadgesCard";
 import { inviteState } from "@/lib/referral";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -16,7 +17,7 @@ export default async function HeroHome() {
   const state = await loadHero();
   if (!state) return null;
 
-  const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour, window: win, race, draw } =
+  const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour, window: win, race, draw, badges } =
     state;
 
   // كارت الدعوة: كود الولد نفسه + هل ينفع يكتب كود حد
@@ -240,6 +241,8 @@ export default async function HeroHome() {
           </p>
         )}
       </section>
+
+      <BadgesCard badges={badges} />
 
       <InviteCard
         myCode={myAccount?.login_code ?? null}
