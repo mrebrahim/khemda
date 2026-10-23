@@ -141,7 +141,7 @@ export default async function DrawPage() {
               <textarea
                 name="prizes"
                 rows={6}
-                defaultValue={"كورة جلد\nسماعات\nشنطة رياضة\nكتاب مقدس باسمه\nباور بانك"}
+                defaultValue={"كورة قدم\nتيشيرت رياضي\nشنطة جزمة\nجوارب كورة\nزمزمية رياضية\nكروت لاعبين"}
                 className="mt-0.5 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm leading-relaxed"
               />
             </label>
