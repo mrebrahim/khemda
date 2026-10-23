@@ -242,7 +242,7 @@ export async function unrecordEvent(opts: {
   const supabase = await createClient();
   const { data: mark } = await supabase
     .from("event_marks")
-    .select("id, place, bonus")
+    .select("id, place, bonuses")
     .eq("student_id", studentId)
     .eq("event_key", ev.key)
     .eq("on_date", date)
@@ -251,12 +251,9 @@ export async function unrecordEvent(opts: {
   const sessionId = ev.field ? await getOrCreateSessionId(date) : null;
   const why = `شيل تسجيل ${ev.label}`;
 
-  if (mark?.bonus && ev.bonusRule) {
-    await reverseLatest(
-      baseKey(ev, date, sessionId, studentId, ev.bonusRule),
-      by,
-      why,
-    );
+  for (const rule of (mark?.bonuses ?? []) as string[]) {
+    if (!ev.bonuses.some((b) => b.rule === rule)) continue;
+    await reverseLatest(baseKey(ev, date, sessionId, studentId, rule), by, why);
   }
   if (mark?.place && ev.placeRules) {
     await reverseLatest(
@@ -356,50 +353,59 @@ export async function setEventBonus(opts: {
   ev: ChurchEvent;
   date: string;
   studentId: number;
-  bonus: boolean;
+  /** كود البونص — الحدث ممكن يبقى فيه أكتر من واحد */
+  rule: string;
+  on: boolean;
   by: string;
 }): Promise<RecordResult> {
-  const { ev, date, studentId, bonus, by } = opts;
-  if (!ev.bonusRule) return { ok: false, error: "الحدث ده مفيهوش بونص" };
+  const { ev, date, studentId, rule, on, by } = opts;
+
+  const bonus = ev.bonuses.find((b) => b.rule === rule);
+  if (!bonus) return { ok: false, error: "البونص ده مش بتاع الحدث ده" };
   if (!validDate(ev, date)) return { ok: false, error: "التاريخ مش يوم الحدث" };
 
-  // لازم يكون مسجّل دخول المسابقة الأول
+  // لازم يكون مسجّل حضوره الأول
   const entry = await recordEvent({ ev, date, studentId, by });
   if (!entry.ok) return entry;
 
   const supabase = await createClient();
   const sessionId = ev.field ? await getOrCreateSessionId(date) : null;
-  const base = baseKey(ev, date, sessionId, studentId, ev.bonusRule);
+  const base = baseKey(ev, date, sessionId, studentId, rule);
 
   const { data: mark } = await supabase
     .from("event_marks")
-    .select("bonus")
+    .select("bonuses")
     .eq("student_id", studentId)
     .eq("event_key", ev.key)
     .eq("on_date", date)
     .maybeSingle();
 
-  if (Boolean(mark?.bonus) === bonus) return { ok: true, xp: 0 };
+  const current = ((mark?.bonuses ?? []) as string[]).filter((r) =>
+    ev.bonuses.some((b) => b.rule === r),
+  );
+  if (current.includes(rule) === on) return { ok: true, xp: 0 };
+
+  const next = on ? [...current, rule] : current.filter((r) => r !== rule);
 
   const { error } = await supabase
     .from("event_marks")
-    .update({ bonus, updated_at: new Date().toISOString() })
+    .update({ bonuses: next, updated_at: new Date().toISOString() })
     .eq("student_id", studentId)
     .eq("event_key", ev.key)
     .eq("on_date", date);
   if (error) return { ok: false, error: error.message };
 
-  if (!bonus) {
-    await reverseLatest(base, by, `شيل ${ev.bonusLabel ?? "البونص"}`);
+  if (!on) {
+    await reverseLatest(base, by, `شيل ${bonus.label}`);
     return { ok: true, xp: 0 };
   }
 
   const res = await awardOnce({
     base,
     studentId,
-    ruleCode: ev.bonusRule,
+    ruleCode: rule,
     occurredOn: date,
-    note: `${ev.label} — ${ev.bonusLabel ?? "بونص"}`,
+    note: `${ev.label} — ${bonus.label}`,
     by,
   });
   if (res.error) return { ok: false, error: res.error };
@@ -476,13 +482,27 @@ export async function alreadyMarked(
   date: string,
   studentId: number,
 ): Promise<boolean> {
+  return (await markOf(ev, date, studentId)) !== null;
+}
+
+/** التسجيل الحالي للولد في الحدث ده — أو null لو مش مسجّل */
+export async function markOf(
+  ev: ChurchEvent,
+  date: string,
+  studentId: number,
+): Promise<{ bonuses: string[] } | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("event_marks")
-    .select("id")
+    .select("id, bonuses")
     .eq("student_id", studentId)
     .eq("event_key", ev.key)
     .eq("on_date", date)
     .maybeSingle();
-  return Boolean(data);
+  if (!data) return null;
+  return {
+    bonuses: ((data.bonuses ?? []) as string[]).filter((r) =>
+      ev.bonuses.some((b) => b.rule === r),
+    ),
+  };
 }

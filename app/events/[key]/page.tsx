@@ -58,7 +58,7 @@ export default async function EventRecordPage({
       getClassServants(),
       supabase
         .from("event_marks")
-        .select("student_id, place, bonus")
+        .select("student_id, place, bonuses")
         .eq("event_key", ev.key)
         .eq("on_date", date),
       getRules(),
@@ -100,7 +100,9 @@ export default async function EventRecordPage({
     initial[m.student_id] = {
       present: true,
       place: m.place ?? null,
-      bonus: Boolean(m.bonus),
+      bonuses: ((m.bonuses ?? []) as string[]).filter((r) =>
+        ev.bonuses.some((b) => b.rule === r),
+      ),
     };
   }
 
@@ -114,7 +116,7 @@ export default async function EventRecordPage({
       ] as [number, number, number])
     : null;
 
-  const bonusXp = ev.bonusRule ? (xpOf.get(ev.bonusRule) ?? 0) : null;
+  const bonuses = ev.bonuses.map((b) => ({ ...b, xp: xpOf.get(b.rule) ?? 0 }));
   const timing = timingOf(ev, today, cairoSecondsOfDay());
 
   return (
@@ -159,8 +161,10 @@ export default async function EventRecordPage({
             دوس على الولد = حضر و+{entryXp} نقطة تنزل في رصيده فورًا. دوس تاني
             يشيل التسجيل ويرجّع النقط.
             {ev.placeRules && " المراكز بتتحدّد من الميداليات جنب الاسم."}
-            {ev.bonusRule &&
-              ` و⭐ معناها ${ev.bonusLabel} — بونص ${bonusXp} نقطة زيادة.`}
+            {bonuses.length > 0 &&
+              ` والعلامات اللي تحت الاسم بونص زيادة: ${bonuses
+                .map((b) => `${b.label} +${b.xp}`)
+                .join(" • ")}.`}
           </p>
         </section>
 
@@ -169,7 +173,7 @@ export default async function EventRecordPage({
             📷 سجّل بمسح كود الولد
           </summary>
           <div className="px-4 pb-4">
-            <Scanner event={{ key: ev.key, date, label: ev.label }} />
+            <Scanner event={{ key: ev.key, date, label: ev.label, bonuses }} />
           </div>
         </details>
 
@@ -180,8 +184,7 @@ export default async function EventRecordPage({
           emoji={ev.emoji}
           entryXp={entryXp}
           placeXp={placeXp}
-          bonusXp={bonusXp}
-          bonusLabel={ev.bonusLabel}
+          bonuses={bonuses}
           groups={list}
           initial={initial}
           readOnly={false}

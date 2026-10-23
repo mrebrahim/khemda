@@ -8,6 +8,14 @@ export type EventKey =
   | "sunday_school"
   | "quiz_fri";
 
+/** بونص بيتحط جنب اسم الولد — ⭐ واحدة لكل حاجة عملها */
+export type EventBonus = {
+  /** كود قاعدة النقط */
+  rule: string;
+  label: string;
+  emoji: string;
+};
+
 export type ChurchEvent = {
   key: EventKey;
   label: string;
@@ -23,9 +31,8 @@ export type ChurchEvent = {
   entryRule: string;
   /** قواعد المركز الأول والثاني والتالت — للمسابقات بس */
   placeRules: readonly [string, string, string] | null;
-  /** بونص زيادة (الدرجة النهائية في المسابقة) */
-  bonusRule: string | null;
-  bonusLabel: string | null;
+  /** بونصات زيادة — الحدث ممكن يبقى فيه أكتر من واحد */
+  bonuses: readonly EventBonus[];
   /** الخانة المقابلة في كشف الحضور عشان التقارير تفضل مظبوطة */
   field: StudentField | null;
   /** يتبعت تذكير في معاده؟ */
@@ -46,8 +53,7 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: null,
     entryRule: "tasbeha",
     placeRules: null,
-    bonusRule: null,
-    bonusLabel: null,
+    bonuses: [],
     field: "tasbeha",
     remind: true,
     reminder: {
@@ -66,8 +72,7 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: null,
     entryRule: "quiz_thu_entry",
     placeRules: ["quiz_thu_1st", "quiz_thu_2nd", "quiz_thu_3rd"] as const,
-    bonusRule: "quiz_full",
-    bonusLabel: "الدرجة كاملة",
+    bonuses: [{ rule: "quiz_full", label: "الدرجة كاملة", emoji: "⭐" }],
     field: null,
     remind: true,
     reminder: {
@@ -86,9 +91,12 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: null,
     entryRule: "mass",
     placeRules: null,
-    // الولد اللي قرا القراءات في القداس — ⭐ جنب اسمه
-    bonusRule: "readings",
-    bonusLabel: "قرا القراءات",
+    // اللي بيتعمل حوالين القداس — كل واحدة ⭐ لوحدها جنب الاسم
+    bonuses: [
+      { rule: "tasbeha_bonus", label: "حضر التسبحة", emoji: "🎶" },
+      { rule: "readings_prep", label: "حضر القرايات", emoji: "📖" },
+      { rule: "readings", label: "قرا في القداس", emoji: "🎙️" },
+    ],
     field: "mass",
     remind: true,
     reminder: {
@@ -107,8 +115,7 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: "الدور السابع",
     entryRule: "sunday_school",
     placeRules: null,
-    bonusRule: null,
-    bonusLabel: null,
+    bonuses: [],
     field: "service",
     remind: true,
     reminder: {
@@ -127,8 +134,7 @@ export const EVENTS: readonly ChurchEvent[] = [
     where: "جوّه الفصل",
     entryRule: "quiz_fri_entry",
     placeRules: ["quiz_fri_1st", "quiz_fri_2nd", "quiz_fri_3rd"] as const,
-    bonusRule: "quiz_full",
-    bonusLabel: "الدرجة كاملة",
+    bonuses: [{ rule: "quiz_full", label: "الدرجة كاملة", emoji: "⭐" }],
     field: null,
     remind: false,
     reminder: null,

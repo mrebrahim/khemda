@@ -7,7 +7,13 @@ import { identifyForEvent, scanForEvent } from "@/app/events/actions";
 import type { ScanTarget, CheckInResult } from "@/lib/checkin";
 
 /** لو اتبعت، المسح بيسجّل الحدث ده بدل حضور مدارس الأحد */
-export type ScanEvent = { key: string; date: string; label: string };
+export type ScanEvent = {
+  key: string;
+  date: string;
+  label: string;
+  /** علامات زيادة الخادم بيعلّمها وهو بيمسح */
+  bonuses?: { rule: string; label: string; emoji: string; xp: number }[];
+};
 
 type Phase = "idle" | "scanning" | "confirming" | "done" | "error";
 
@@ -20,6 +26,8 @@ export default function Scanner({ event }: { event?: ScanEvent } = {}) {
   const [count, setCount] = useState(0);
   // الكود المكتوب بالإيد — لما الكاميرا ماتنفعش أو الكارت ضايع
   const [code, setCode] = useState("");
+  // العلامات اللي الخادم علّمها للولد اللي قدامه دلوقتي
+  const [ticks, setTicks] = useState<string[]>([]);
 
   const router = useRouter();
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
@@ -80,6 +88,7 @@ export default function Scanner({ event }: { event?: ScanEvent } = {}) {
         return;
       }
       setTarget(found);
+      setTicks("bonuses" in found ? (found.bonuses as string[]) : []);
     } catch {
       setError("حصلت مشكلة في قراءة الكود");
       setPhase("error");
@@ -106,7 +115,7 @@ export default function Scanner({ event }: { event?: ScanEvent } = {}) {
     setBusy(true);
     try {
       const res = event
-        ? await scanForEvent(event.key, event.date, lastToken.current)
+        ? await scanForEvent(event.key, event.date, lastToken.current, ticks)
         : await confirmCheckIn(lastToken.current);
       setResult(res);
       setPhase("done");
@@ -207,7 +216,53 @@ export default function Scanner({ event }: { event?: ScanEvent } = {}) {
             </p>
           )}
 
-          {target.alreadyHere ? (
+          {event?.bonuses && event.bonuses.length > 0 && (
+            <div className="mt-4 space-y-1.5 text-start">
+              {event.bonuses.map((b) => {
+                const on = ticks.includes(b.rule);
+                return (
+                  <button
+                    key={b.rule}
+                    type="button"
+                    onClick={() =>
+                      setTicks((t) =>
+                        on ? t.filter((r) => r !== b.rule) : [...t, b.rule],
+                      )
+                    }
+                    aria-pressed={on}
+                    className={`w-full flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 transition ${
+                      on
+                        ? "bg-violet-50 border-violet-500"
+                        : "bg-white border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`shrink-0 w-7 h-7 rounded-lg border-2 grid place-content-center text-sm ${
+                        on
+                          ? "bg-violet-600 border-violet-600 text-white"
+                          : "bg-white border-slate-300 text-transparent"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      ✓
+                    </span>
+                    <span
+                      className={`grow text-start font-bold text-sm ${
+                        on ? "text-violet-900" : "text-slate-600"
+                      }`}
+                    >
+                      {b.emoji} {b.label}
+                    </span>
+                    <span className="shrink-0 text-xs font-bold text-violet-700 tabular-nums">
+                      +{b.xp}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {target.alreadyHere && !(event?.bonuses && event.bonuses.length > 0) ? (
             <p className="mt-4 bg-amber-50 border border-amber-300 rounded-xl py-3 font-bold text-amber-900">
               {event ? `متسجّل خلاص في ${event.label}` : "إنت حاضر بالفعل يا بطل!"}
             </p>
@@ -218,7 +273,7 @@ export default function Scanner({ event }: { event?: ScanEvent } = {}) {
               disabled={busy}
               className="w-full mt-4 rounded-xl bg-green-600 py-3.5 text-white font-bold text-lg hover:bg-green-700 disabled:opacity-60 transition"
             >
-              {busy ? "بيتسجّل..." : "✅ أيوة، سجّل حضوره"}
+              {busy ? "بيتسجّل..." : target.alreadyHere ? "✅ احفظ العلامات" : "✅ أيوة، سجّل حضوره"}
             </button>
           )}
 

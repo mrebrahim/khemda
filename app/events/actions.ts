@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { eventByKey } from "@/lib/events";
 import {
-  alreadyMarked,
+  markOf,
   recordByToken,
   recordEvent,
   setEventBonus,
@@ -104,12 +104,13 @@ export async function markClass(
   return { ok: true, added, xp };
 }
 
-/** بونص الدرجة النهائية في المسابقة */
+/** بونص من بونصات الحدث — زي «قرا في القداس» أو «الدرجة كاملة» */
 export async function setBonus(
   eventKey: string,
   date: string,
   studentId: number,
-  bonus: boolean,
+  rule: string,
+  on: boolean,
 ): Promise<ToggleResult> {
   const ev = eventByKey(eventKey);
   if (!ev) return { ok: false, error: "الحدث ده مش موجود" };
@@ -117,7 +118,7 @@ export async function setBonus(
   const by = await servant();
   if (!by) return { ok: false, error: "لازم تسجّل دخول" };
 
-  const res = await setEventBonus({ ev, date, studentId, bonus, by });
+  const res = await setEventBonus({ ev, date, studentId, rule, on, by });
   if (res.ok) revalidatePath(`/events/${ev.key}`);
   return res;
 }
@@ -127,7 +128,7 @@ export async function identifyForEvent(
   eventKey: string,
   date: string,
   token: string,
-): Promise<(ScanTarget & { alreadyHere: boolean }) | null> {
+): Promise<(ScanTarget & { alreadyHere: boolean; bonuses: string[] }) | null> {
   const ev = eventByKey(eventKey);
   if (!ev) return null;
   if (!(await servant())) return null;
@@ -135,14 +136,22 @@ export async function identifyForEvent(
   const target = await lookupToken(token);
   if (!target) return null;
 
-  return { ...target, alreadyHere: await alreadyMarked(ev, date, target.studentId) };
+  const mark = await markOf(ev, date, target.studentId);
+  return { ...target, alreadyHere: mark !== null, bonuses: mark?.bonuses ?? [] };
 }
 
-/** الخطوة التانية: سجّل الحضور بالكود */
+/**
+ * الخطوة التانية: سجّل الحضور بالكود.
+ *
+ * `rules` هي البونصات اللي الخادم علّمها في شاشة المسح — زي
+ * «حضر القرايات» و«قرا في القداس». بتتسجّل مع الحضور في نفس
+ * الدوسة.
+ */
 export async function scanForEvent(
   eventKey: string,
   date: string,
   token: string,
+  rules: string[] = [],
 ): Promise<ScanOutcome> {
   const ev = eventByKey(eventKey);
   if (!ev) return { status: "unknown" };
@@ -151,6 +160,29 @@ export async function scanForEvent(
   if (!by) return { status: "unknown" };
 
   const res = await recordByToken({ ev, date, token, by });
+
+  // الحضور اتسجّل (أو كان متسجّل) — نظبّط البونصات زي ما الخادم علّمها
+  if (res.status === "ok" || res.status === "already") {
+    const target = await lookupToken(token);
+    if (target) {
+      const wanted = rules.filter((r) => ev.bonuses.some((b) => b.rule === r));
+      const current = (await markOf(ev, date, target.studentId))?.bonuses ?? [];
+      for (const b of ev.bonuses) {
+        const on = wanted.includes(b.rule);
+        if (on === current.includes(b.rule)) continue;
+        const set = await setEventBonus({
+          ev,
+          date,
+          studentId: target.studentId,
+          rule: b.rule,
+          on,
+          by,
+        });
+        if (set.ok && on && res.status === "ok") res.xp += set.xp;
+      }
+    }
+  }
+
   revalidatePath(`/events/${ev.key}`);
   return res;
 }
