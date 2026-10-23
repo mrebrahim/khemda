@@ -16,7 +16,7 @@ export default async function HeroHome() {
   const state = await loadHero();
   if (!state) return null;
 
-  const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour, window: win, race } =
+  const { rank, streak, totalXp, ranks, doneToday, rules, week, prefs, hour, window: win, race, draw } =
     state;
 
   // كارت الدعوة: كود الولد نفسه + هل ينفع يكتب كود حد
@@ -215,7 +215,7 @@ export default async function HeroHome() {
         </div>
       </Link>
 
-      {race && <SeasonRaceCard race={race} />}
+      {race && <SeasonRaceCard race={race} draw={draw} />}
 
       {/* السلسلة */}
       <section className="b-frame p-4">

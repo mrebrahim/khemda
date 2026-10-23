@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { daysLabel, type SeasonRace } from "@/lib/board";
+import type { DrawStanding } from "@/lib/draws";
 
 /**
  * عدّاد نهاية الموسم.
@@ -8,7 +9,14 @@ import { daysLabel, type SeasonRace } from "@/lib/board";
  * ليفل ١٢ وخلاص»، لكن «فاضل ١٨ يوم وإنت التالت بفارق ٤٠
  * نقطة» — رقم بيتغيّر كل يوم ولسه فيه وقت يتعوّض.
  */
-export default function SeasonRaceCard({ race }: { race: SeasonRace }) {
+export default function SeasonRaceCard({
+  race,
+  draw,
+}: {
+  race: SeasonRace;
+  /** سحب آخر الموسم — بيوصل لكل اللي بيلعبوا مش للتلاتة الأوائل */
+  draw?: DrawStanding | null;
+}) {
   const { left, place, total, gapAbove, gapBelow } = race;
 
   // آخر أسبوع بيبقى أحمر، وآخر ٣ أيام أكتر
@@ -54,6 +62,20 @@ export default function SeasonRaceCard({ race }: { race: SeasonRace }) {
       </div>
 
       <p className="text-sm text-slate-200 mt-3 leading-relaxed">{line}</p>
+
+      {draw && (
+        <p
+          className={`text-[12px] mt-3 py-2 px-2.5 border leading-relaxed ${
+            draw.in
+              ? "text-emerald-300 border-emerald-500/40 bg-emerald-500/10"
+              : "text-slate-300 border-white/15 bg-white/5"
+          }`}
+        >
+          {draw.in
+            ? `🎁 إنت داخل ${draw.title} — مش لازم تبقى الأول عشان تكسب`
+            : `🎁 فاضلك ${draw.need} نقطة تدخل ${draw.title}`}
+        </p>
+      )}
 
       <Link
         href="/board"

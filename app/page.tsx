@@ -102,6 +102,12 @@ export default async function HomePage() {
       desc: "حدث الجمعة: الولد يمسح الكود ويفتح صندوق وياخد مكافأة",
     },
     {
+      href: "/draw",
+      emoji: "🎲",
+      title: "سحب آخر الموسم",
+      desc: "كل ولد كمّل بيدخل السحب — مش الأوائل بس",
+    },
+    {
       href: "/admin/claims",
       emoji: "🎁",
       title: "طلبات الجوايز",

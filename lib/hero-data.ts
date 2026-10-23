@@ -14,6 +14,7 @@ import {
   type ReminderPrefs,
 } from "@/lib/habits";
 import { daysLeft, type SeasonRace } from "@/lib/board";
+import { drawStandingFor, type DrawStanding } from "@/lib/draws";
 import { todayISO } from "@/lib/types";
 
 export type HeroState = {
@@ -36,6 +37,8 @@ export type HeroState = {
   window: MissionWindow;
   /** سباق الموسم: فاضل كام يوم، ومركزه، والفرق عن اللي قبله */
   race: SeasonRace | null;
+  /** سحب آخر الموسم: داخل ولا فاضله كام نقطة */
+  draw: DrawStanding | null;
 };
 
 export function missingConfig(): string[] {
@@ -80,7 +83,10 @@ export async function loadHero(): Promise<HeroState | null> {
     .filter((r) => r.is_verified)
     .reduce((n, r) => n + r.xp, 0);
 
-  const race = season ? await seasonRace(hero.studentId, season, today) : null;
+  const [race, draw] = await Promise.all([
+    season ? seasonRace(hero.studentId, season, today) : null,
+    season ? drawStandingFor(hero.studentId, season.id, totalXp) : null,
+  ]);
 
   return {
     hero,
@@ -98,6 +104,7 @@ export async function loadHero(): Promise<HeroState | null> {
     hour: cairoHour(),
     window: missionWindow(),
     race,
+    draw,
   };
 }
 
